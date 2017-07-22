@@ -1,0 +1,45 @@
+//Kadir Berkay Aydemir 1941780, Batyr Charyyev 2001527
+
+//How to Run:
+
+1. Compile client.c on node A, router.c on node B,C,D and server.c on node E.
+
+2. Run .server on E, .router on B,C,D nodes and .client on A as "./client input.txt", where input.txt contains "clientIP|router1IP|router2IP|router3IP|serverIP|message*".
+
+Note: You have to write a '*' character to the end of the message which indicates that message is finished. IP's and message must be separated by a '|' character.
+
+example input.txt: 
+172.17.68.9|172.17.68.10|172.17.71.1|172.17.70.2|172.17.68.11|batyrcharyburakkadirberkay* 
+
+example run:
+	//for server node:
+		gcc server.c -w -o server
+		./server
+	//for router nodes
+		gcc router.c -w -o router
+		./router
+	//for client.c
+		gcc client.c -w -o client
+		./client input.txt
+
+
+//How our Code works:
+
+1. Client program takes an input file which includes IP's of all nodes and the message which ends with a '*' character.
+
+2. The client program creates the header in this format "0|1|clientIP|router1IP|router2IP|router3IP|serverIP|". First '0' character indicates the index of source IP and the '1' indicates index of destination IP. In each node this header is changed according to their IP's and to the way of packet.
+
+3. We fix the whole packet to the 100 bytes by adding characters from the message to the header. After merging header and message we send it to the destination.
+
+4. Router program takes the message and checks the header part. It finds its own IP and source of message IP according to the given indexes. And with the help of indexes it finds IP of the next hop. 
+
+5. If source_index < router_index then it sends the message through the server way. Else if  source_index > router_index it sends the message through the client.
+
+6. After determining the IP of the next hop it modifies header part of message according to destination IP and its own IP 
+	For example:
+		Coming message to router B 
+			 "0|1|clientIP|router1IP|router2IP|router3IP|serverIP|message*"
+		Message sent from router B 
+			"1|2|clientIP|router1IP|router2IP|router3IP|serverIP|message*"
+			
+7. If index is equal to 4 it means node is E(server), so it can send acknowledgment message back to the client.
