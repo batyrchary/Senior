@@ -1,0 +1,5 @@
+extract inputs from input.tar.gz.
+
+create rasterizer exe with help of makefile
+
+with command like "./rasterizer ./inputs/1_s.txt ./inputs/1_c.txt " create output.
