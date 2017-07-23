@@ -1,0 +1,7 @@
+This is raytracer with texture mapping. Extract all the files and folders from inputs.tar.gz and with help of makefile create
+"raytracer" exe
+
+then with simple command like "./scripts/makeVideo.sh ./raytracer ./scenes/four_cubes ./cameras/four_cubes four_cubes" create 
+four_cubes.mp4 where last argument in input must be same with name of scene.
+
+When generating a mp4 file it may consume large memory cause it will generate all the images then merge them to one mp4 file.
