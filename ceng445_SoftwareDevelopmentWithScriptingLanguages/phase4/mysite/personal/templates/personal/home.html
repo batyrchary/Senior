@@ -1,0 +1,1049 @@
+<!DOCTYPE html >
+<html>
+<head>
+
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+<script>
+var array = new Array(10);
+for (var i = 0; i < 10; i++) {
+  array[i] = new Array(5);
+}
+
+for (var i = 0; i < 10; i++) {
+
+	for (var j = 0; j < 5; j++) {
+		array[i][j] = 0;
+	}
+  
+}
+</script>
+
+<script>
+var idarray = new Array(10);
+for (var i = 0; i < 10; i++) {
+  idarray[i] = new Array(5);
+}
+
+for (var i = 0; i < 10; i++) {
+
+	for (var j = 0; j < 5; j++) {
+		idarray[i][j] = "";
+	}
+  
+}
+</script>
+
+
+
+<script>
+// WEATHER
+var apiKey = 'cc2eca44923464762047d797a6aa7596'
+// var result;
+var url = 'http://api.openweathermap.org/data/2.5/weather?q=Ankara&units=metric&APPID='+apiKey
+
+function formNameInput(n) {
+	event.preventDefault()
+
+	var city = $('input[name=city_'+n+']').val()
+	var checkbox = $('input[name=temperature_type_' + n + ']:checked')
+	var type = 'metric'
+
+	if (checkbox.val() == '1') {
+		type = 'imperial'
+	}
+
+	var url = 'http://api.openweathermap.org/data/2.5/weather?q='+city
+	+'&units='+type+'&APPID=cc2eca44923464762047d797a6aa7596'
+
+
+	$.ajax({
+		method: 'GET',
+		url: url
+	}).then(function (result) {
+		$('span#city_' + n).text(result.name)
+		$('span#temperature_value_' + n).text(result.main.temp)
+
+		var typeVal = $('span#temperature_type_' + n)
+		
+		if (type == 'imperial') {
+			typeVal.text('F')
+		} else {
+			typeVal.text('C')
+		}
+	})
+
+	return false
+}
+
+function changeRadio(n) {
+	event.preventDefault()
+
+	var city = $('span#city_' + n).text()
+	var checkbox = $('input[name=temperature_type_' + n + ']:checked')
+	var type = 'metric'
+
+	if (checkbox.val() == '1') {
+		type = 'imperial'
+	}
+
+	var url = 'http://api.openweathermap.org/data/2.5/weather?q='+city
+	+'&units='+type+'&APPID=cc2eca44923464762047d797a6aa7596'
+
+	$.ajax({
+		method: 'GET',
+		url: url
+	}).then(function (result) {
+		$('span#city_' + n).text(result.name)
+		$('span#temperature_value_' + n).text(result.main.temp)
+
+		var typeVal = $('span#temperature_type_' + n)
+		
+		if (type === 'metric') {
+			typeVal.text('C')
+		} else if(type == 'imperial') {
+			typeVal.text('F')
+		}
+
+	})
+}
+</script>
+
+
+<script>
+// 2.CURRENCY
+function convertCurrency(a) {
+	$.ajax({
+		method: 'GET',
+		url: 'http://api.fixer.io/latest?symbols=USD,TRY'
+	}).then(function (response) {
+		var n1 = parseInt($('input[name="currency_amount_'+a+'"]').val())
+		var curr1 = $('select#currency_select_'+a).val()
+
+		if (curr1 == 'USD') {
+			var temp = n1 / response.rates.USD
+			var result = temp * response.rates.TRY
+		} else if(curr1 == 'TRY') {
+			var temp = n1 / response.rates.TRY
+			var result = temp * response.rates.USD
+		}
+
+		$('span#currency_result_'+a).text(result)
+	})
+}</script>
+
+<script>
+function findCard(n) {
+    var digits = $('#card_number_'+n).val().trim().replace(/ /g, '').slice(0, 6)
+    if (digits.length < 6) {
+        throw new Error('Not enough digits')
+    }
+    $.get('https://www.binlist.net/json/'+digits, function(res) {
+    	var data = JSON.parse(res)
+    	$('span#bin_'+n).empty().text('Code: '+data.bin)
+    	$('span#brand_'+n).empty().text('Brand: '+data.brand)
+    	$('span#country_'+n).empty().text('Country: '+data.country_name)
+    	$('span#bank_'+n).empty()
+    	if (data.bank) {
+    		$('span#bank_'+n).text('Bank: '+data.bank)
+    	}
+    })
+}
+</script>
+
+<script>
+//EVENTS
+var monthNames = [
+  "01", "02", "03",
+  "04", "05", "06", "07",
+  "08", "09", "10",
+  "11", "12"
+];
+
+function fetchEvents(n) {
+	var random = Math.floor(Math.random() * (1980 - 1930 + 1) + 1930)
+
+	var date = 'begin_date='+random+'0000&end_date=20001231&'
+	var begin = new Date($('#begin_1').val())
+	var end = new Date($('#end_1').val())
+	if (begin != 'Invalid Date' && end != 'Invalid Date') {
+		date = ''
+		var day1 = begin.getDate().toString()
+		if (day1.length == 1) {
+			day1 = '0'+day1
+		}
+		var day2 = begin.getDate().toString()
+		if (day2.length == 1) {
+			day2 = '0'+day2
+		}
+		date = date+'begin_date='+begin.getFullYear()+''+monthNames[begin.getMonth()]+''+day1+'&'
+		date = date+'end_date='+end.getFullYear()+''+monthNames[end.getMonth()]+''+day2+'&'
+	}
+
+	console.log(date)
+
+	$.get('http://www.vizgr.org/historical-events/search.php?'+date+'&format=json&limit=1',function(res){
+		console.log(res.result.event.date, res.result.event.description)
+		$('span#event_date_'+n).empty().text(res.result.event.date)
+		$('span#event_text_'+n).empty().text(res.result.event.description)
+	})
+}
+</script>
+
+
+
+
+
+
+<script>
+function translateWord(n) {
+	var word = $('input#word_'+n).val().trim()
+	var url = 'https://mashape-community-urban-dictionary.p.mashape.com/define?term='+word
+
+	$.ajax({
+		url: url,
+		type: 'GET',
+		beforeSend: function (xhr) {
+			xhr.setRequestHeader('X-Mashape-Key', 'T7lrwYgBKwmshmz8Y44WPMFY0Os7p18sQgDjsn2Me6i6qUVzDp')
+			xhr.setRequestHeader('Accept', 'text/plain')
+		},
+		success: function (response) {
+			var ul = $('ul#translation_'+n)
+			ul.empty()
+
+			var li = $(document.createElement('li'))
+			li.text(response.list[0].definition)
+			ul.append(li)
+		}
+	})
+}
+</script>
+
+
+
+<script>
+function search_map(n) {
+	var city = $('input#google_map_search_'+n).val().trim()
+	var url = '/maps/api/staticmap?center='+city+'&zoom=10&size=600x300&key=AIzaSyDojpomRtrJMMGreF6d37YNvHo9Xsu2WYQ'
+
+	$('div#div_map_'+n).empty()
+	var img = $(document.createElement('img'))
+	img.attr('src', 'https://maps.googleapis.com'+url)
+	img.attr('id', 'map_'+n)
+	$('div#div_map_'+n).append(img)
+}
+</script>
+
+
+<script>
+function searchTimezone(n) {
+	var zoneName = $('input#time_zone_text_'+n).val()
+	var key = 'YYPXAUDZDHZW'
+
+	$.ajax({
+		url: 'http://api.timezonedb.com/v2/list-time-zone?key='+key+'&'+
+		'format=json&fields=gmtOffset,timestamp,zoneName&zone=*/'+zoneName,
+		success: function (res) {
+			var convertTz = function(timestamp) {
+				var date = new Date(timestamp*1000);
+				// Hours part from the timestamp
+				var hours = date.getHours() - 3;
+				// Minutes part from the timestamp
+				var minutes = "0" + date.getMinutes();
+				// Seconds part from the timestamp
+				var seconds = "0" + date.getSeconds();
+
+				return hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+			}
+
+			var timestamp = res.zones[0].timestamp
+
+			// Will display time in 10:30:23 format
+			var formattedTime = convertTz(timestamp);
+
+			$('p#timezone_time_'+n).text(formattedTime)
+		}
+	})
+}
+</script>
+
+
+<script>
+function valuesToArray(obj) {
+  return Object.keys(obj).map(function (key) { return obj[key]; });
+}
+function listCountries(n) {
+	var success = function (res) {
+		var countries = valuesToArray(res.Results)
+
+		var select = $('select#capital_select_'+n)
+		select.empty()
+
+		countries.forEach(function (country) {
+			var option = $(document.createElement('option'))
+			option.attr('value', country.CountryCodes.iso2)
+			option.text(country.Name)
+
+			select.append(option)
+		})
+	}
+
+	window.callback = function (res) {
+		success(res)
+	}
+
+	$.ajax({
+		url: 'http://www.geognos.com/api/en/countries/info/all.jsonp',
+		dataType: 'jsonp',
+		// jsonpCallback: window.callback,
+		crossOrigin: true,
+		success: function (res) {
+			callback(res)
+		}
+	})
+}
+function findCapital(n) {
+	var q = $('select#capital_select_'+n).val()
+
+	var success = function (res) {
+		$('p#capital_result_'+n).text(res.Results.Capital.Name)
+	}
+
+	window.callback = function (res) {
+		success(res)
+	}
+
+	$.ajax({
+		url: 'http://www.geognos.com/api/en/countries/info/'+q+'.jsonp',
+		dataType: 'jsonp',
+		crossOrigin: true,
+		success: function (res) {
+			callback(res)
+		}
+	})
+}
+</script>
+
+<script>
+function search_image(n) {
+	var q = $('input#image_search_'+n).val()
+
+	$.ajax({
+		url: 'https://api.cognitive.microsoft.com/bing/v5.0/images/search?q='+q+
+		'&count=1&safeSearch=Moderate',
+		beforeSend: function (request) {
+			request.setRequestHeader('Ocp-Apim-Subscription-Key', '1d00832cf6ac464eb19b9d93b22db1bd')
+		},
+		success: function (res) {
+			$('div#img_search_'+n).empty()
+
+			var img = $(document.createElement('img'))
+			img.attr('src', res.value[0].contentUrl)
+			img.attr('height', '140px')
+			img.attr('width', '200px')
+			$('div#img_search_'+n).html(img)
+		}
+	})
+}
+</script>
+
+
+
+<!----------------------------------------------->
+<script>
+function shower(bla,id,x,y)
+{
+	event.preventDefault()
+
+	if(array[x][y]==0)
+	{
+		idarray[x][y]=id;
+		document.getElementById(id).style.display='block';
+		array[x][y]=1;
+	}
+
+	var value=bla;
+	//value = $('#submitGetRequest').attr('value');
+
+	name=String(x)+String(y)
+
+	console.log(value)
+
+	console.log(name)
+
+	$.ajax({
+		url: 'http://127.0.0.1:8000/test?'+name+'='+value, 
+		method: 'GET',
+		success: function(response) {
+//			console.log(response)
+			return false
+		}
+	})
+return
+}
+
+</script>
+
+<script>
+function remover(bla,x,y)
+{
+	event.preventDefault()
+	if(array[x][y]==1)
+	{	
+		document.getElementById(idarray[x][y]).style.display='none';
+		idarray[x][y]="";
+		array[x][y]=0;
+	}
+
+	var value=bla;
+
+	name=String(x)+String(y)
+
+	console.log(value)
+
+	console.log(name)
+
+	$.ajax({
+		url: 'http://127.0.0.1:8000/remove?'+name+'='+value, 
+		method: 'GET',
+		success: function(response) {
+//			console.log(response)
+			return false
+		}
+	})
+return
+
+
+
+
+
+
+
+
+
+
+
+}
+</script>
+
+<script>
+function saver()
+{
+	event.preventDefault()
+
+	$.ajax({
+		url: 'http://127.0.0.1:8000/save?', 
+		method: 'GET',
+		success: function(response) {
+			return false
+		}
+	})
+return
+
+
+}
+</script>
+
+<script>
+function loader()
+{
+
+console.log("inner")
+
+		{% for key, value in weather.items %}
+			{% with "1" as name2 %} 
+
+			shower('Weather','weather_api{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+
+		{% for key, value in currency.items %}
+			{% with "1" as name2 %} 
+
+			shower('Currency','currency_api{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+		{% for key, value in card.items %}
+			{% with "1" as name2 %} 
+
+			shower('Card','card_finder{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+		{% for key, value in history.items %}
+			{% with "1" as name2 %} 
+
+			shower('Event','event_lookup{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+		{% for key, value in unitconverter.items %}
+			{% with "1" as name2 %} 
+
+			shower('Unitconverter','unit_converter{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+		{% for key, value in clock.items %}
+			{% with "1" as name2 %} 
+
+			shower('Clock','Clock{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+		{% for key, value in timezone.items %}
+			{% with "1" as name2 %} 
+
+				shower('Timezone','timezones{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+
+		{% for key, value in map.items %}
+			{% with "1" as name2 %} 
+
+				shower('Map','google_map{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+		{% for key, value in dictionary.items %}
+			{% with "1" as name2 %} 
+
+				shower('Dictionary','dictionary{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+
+		{% for key, value in capitals.items %}
+			{% with "1" as name2 %} 
+
+				shower('Capitals','capitals{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+			{% endwith %}
+		{% endfor %}
+
+		{% for key, value in image.items %}
+			{% with "1" as name2 %} 
+
+				shower('Image','images{{name2}}{{value.X}}{{value.Y}}',{{value.X}},{{value.Y}})
+
+
+			{% endwith %}
+		{% endfor %}
+
+
+
+
+
+}
+</script>
+
+
+
+
+
+
+<button id="save" type="button" onclick="saver()">save</button>
+
+<form action="#" method="get" onsubmit="loader()">
+<input type="submit" id="load" value="load" name="loader2" >
+</form>
+
+
+<table id='mytable' border='3'>
+
+	{% for i in "xxxxxxxx" %}
+	<tr>
+		{% for ii in "xxx" %}
+
+		{% with forloop.parentloop.counter0 as y1 %}
+		{% with forloop.counter0 as x1 %}
+		
+		<td>
+			{% with "1" as name2 %} 
+
+
+<form action="#" method="get" onsubmit="remover('Remove',{{x1}},{{y1}})">
+  <input type="submit" id="submitGetRequest" value="Remove" name={{name2}}{{x1}}{{y1}}>
+</form>
+
+			<div id="currency_api{{name2}}{{x1}}{{y1}}">
+				<h2>Currency Api</h2>
+				<select id="currency_select_{{name2}}{{x1}}{{y1}}">
+					<option value="USD">usd</option>
+					<option value="TRY">try</option>
+				</select>
+				<input type="text" name="currency_amount_{{name2}}{{x1}}{{y1}}" placeholder="amount">
+				<input type="submit" name="submit" onclick="convertCurrency({{name2}}{{x1}}{{y1}})">
+	
+				<div id="currency">
+					<span id="currency_result_{{name2}}{{x1}}{{y1}}">0</span>
+				</div>
+			</div>
+			<script type="text/javascript">
+				document.getElementById("currency_api{{name2}}{{x1}}{{y1}}").style.display="none";
+			</script>
+
+<form action="#" method="get" onsubmit="shower('Currency','currency_api{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+  <input type="submit" id="submitGetRequest" value="Currency" name={{name2}}{{x1}}{{y1}}>
+</form>
+
+<!-------------------------------------------------->
+
+		<div id="weather_api{{name2}}{{x1}}{{y1}}">	
+			<h2>Weather Api</h2>
+			<form name="weather_form" onsubmit="formNameInput({{name2}}{{x1}}{{y1}})">
+				<input type="text" name="city_{{name2}}{{x1}}{{y1}}" placeholder="Search City.." required>
+				<input type="submit" name="submit">
+			</form>
+			<div id="Weather">
+				<span id="city_{{name2}}{{x1}}{{y1}}"></span> 
+				<span id="temperature_value_{{name2}}{{x1}}{{y1}}"></span> 
+				<span id="temperature_type_{{name2}}{{x1}}{{y1}}">C</span>°
+			</div>	
+			<input type="radio" name="temperature_type_{{name2}}{{x1}}{{y1}}" onchange="changeRadio({{name2}}{{x1}}{{y1}})" value="0" checked> Celsius 
+			<input type="radio" name="temperature_type_{{name2}}{{x1}}{{y1}}" onchange="changeRadio({{name2}}{{x1}}{{y1}})" value="1"> Fahrenheit
+		</div>
+		<script type="text/javascript">
+			document.getElementById("weather_api{{name2}}{{x1}}{{y1}}").style.display="none";
+		</script>
+
+
+<form action="#" method="get" onsubmit="shower('Weather','weather_api{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+  <input type="submit" id="submitGetRequest" value="Weather" name={{name2}}{{x1}}{{y1}}>
+</form>
+
+
+
+<!-------------------------------------------------->
+<div id="card_finder{{name2}}{{x1}}{{y1}}">
+	<h2>Card Brand Finder</h2>
+	<input type="text" id="card_number_{{name2}}{{x1}}{{y1}}" placeholder="First 6 digits">
+	<button onclick="findCard({{name2}}{{x1}}{{y1}})">Find Bank</button>
+	<br>
+	<span id="bin_{{name2}}{{x1}}{{y1}}"></span>
+	<span id="brand_{{name2}}{{x1}}{{y1}}"></span>
+	<span id="country_{{name2}}{{x1}}{{y1}}"></span>
+	<span id="bank_{{name2}}{{x1}}{{y1}}"></span>
+</div>
+
+	<script type="text/javascript">
+		document.getElementById("card_finder{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+<form action="#" method="get" onsubmit="shower('Card','card_finder{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+  <input type="submit" id="submitGetRequest" value="Card" name={{name2}}{{x1}}{{y1}}>
+</form>
+
+<!-------------------------------------------------->
+<div id="event_lookup{{name2}}{{x1}}{{y1}}">
+	<h2>Historical Date Events Finder</h2>
+	Begin: <input type="date" id="begin_{{name2}}{{x1}}{{y1}}"><br>
+	End: <input type="date" id="end_{{name2}}{{x1}}{{y1}}"><br>
+	<!--Word: <input type="text" id="word_1" placeholder="Optional.."><br-->
+	<button onclick="fetchEvents({{name2}}{{x1}}{{y1}})">Look up</button>
+
+	<span id="event_date_{{name2}}{{x1}}{{y1}}"></span>
+	<span id="event_text_{{name2}}{{x1}}{{y1}}"></span>
+</div>
+
+	<script type="text/javascript">
+		document.getElementById("event_lookup{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+
+<form action="#" method="get" onsubmit="shower('History','event_lookup{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+  <input type="submit" id="submitGetRequest" value="History" name={{name2}}{{x1}}{{y1}}>
+</form>
+
+<!-------------------------------------------------->
+<div id="dictionary{{name2}}{{x1}}{{y1}}">
+	<input type="text" name="word" id="word_{{name2}}{{x1}}{{y1}}">
+	<input type="submit" value="Translate" onclick="translateWord({{name2}}{{x1}}{{y1}})">
+	<ul id="translation_{{name2}}{{x1}}{{y1}}" style="width: 200px;"></ul>
+</div>
+
+	<script type="text/javascript">
+		document.getElementById("dictionary{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+<form action="#" method="get" onsubmit="shower('Dictionary','dictionary{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+  <input type="submit" id="submitGetRequest" value="Dictionary" name={{name2}}{{x1}}{{y1}}>
+</form>
+
+
+
+<!------------------------------------------------------>
+
+<div id="google_map{{name2}}{{x1}}{{y1}}">
+	<input type="text" id="google_map_search_{{name2}}{{x1}}{{y1}}" placeholder="City, region..">
+	<input type="submit" value="Search" onclick="search_map({{name2}}{{x1}}{{y1}})"><br>
+	<div id="div_map_{{name2}}{{x1}}{{y1}}">
+		<img id="map_{{name2}}{{x1}}{{y1}}" src="https://maps.googleapis.com/maps/api/staticmap?center=Ankara&zoom=10&size=600x300&key=AIzaSyDojpomRtrJMMGreF6d37YNvHo9Xsu2WYQ">
+	</div>
+</div>
+
+
+	<script type="text/javascript">
+		document.getElementById("google_map{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+
+	<form action="#" method="get" onsubmit="shower('Map','google_map{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+	  <input type="submit" id="submitGetRequest" value="Map" name={{name2}}{{x1}}{{y1}}>
+	</form>
+
+
+
+
+<!------------------------------------------------------>
+
+<div id="timezones{{name2}}{{x1}}{{y1}}">
+	<input id="time_zone_text_{{name2}}{{x1}}{{y1}}" type="text">
+	<input type="submit" onclick="searchTimezone({{name2}}{{x1}}{{y1}})">
+	<p id="timezone_time_{{name2}}{{x1}}{{y1}}"></p>
+</div>
+
+
+
+	<script type="text/javascript">
+		document.getElementById("timezones{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+
+	<form action="#" method="get" onsubmit="shower('Timezone','timezones{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+	  <input type="submit" id="submitGetRequest" value="Timezone" name={{name2}}{{x1}}{{y1}}>
+	</form>
+
+
+<!------------------------------------------------------>
+<div id="capitals{{name2}}{{x1}}{{y1}}">
+	<input type="submit" value="Load countries" onclick="listCountries({{name2}}{{x1}}{{y1}})">
+	<select id="capital_select_{{name2}}{{x1}}{{y1}}"></select>
+	<input type="submit" onclick="findCapital({{name2}}{{x1}}{{y1}})" value="Get Capital">
+	<p id="capital_result_{{name2}}{{x1}}{{y1}}"></p>
+</div>
+
+
+	<script type="text/javascript">
+		document.getElementById("capitals{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+
+	<form action="#" method="get" onsubmit="shower('Capitals','capitals{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+	  <input type="submit" id="submitGetRequest" value="Capitals" name={{name2}}{{x1}}{{y1}}>
+	</form>
+
+
+
+<!------------------------------------------------------>
+<div id="images{{name2}}{{x1}}{{y1}}">
+	<input type="text" id="image_search_{{name2}}{{x1}}{{y1}}"><br>
+	<input type="submit" onclick="search_image({{name2}}{{x1}}{{y1}})">
+	<div id="img_search_{{name2}}{{x1}}{{y1}}">
+		
+	</div>
+</div>
+
+
+	<script type="text/javascript">
+		document.getElementById("images{{name2}}{{x1}}{{y1}}").style.display="none";
+	</script>
+
+
+	<form action="#" method="get" onsubmit="shower('Image','images{{name2}}{{x1}}{{y1}}',{{x1}},{{y1}})">
+	  <input type="submit" id="submitGetRequest" value="Image" name={{name2}}{{x1}}{{y1}}>
+	</form>
+
+
+
+
+
+
+
+
+
+
+<!-------------------------------------------------->
+
+		{% endwith %}		
+		</td>
+		{% endwith %}
+		{% endwith %}
+		{% endfor %}
+	</tr>
+	{% endfor %}
+
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<title>Phase4</title>
+
+
+<!--
+<p>{{ ssad }}</p>
+
+
+
+
+<table border='3'>
+
+	{% for i in "xxxxxxxxxx" %}
+	<tr>
+		{% for ii in "xxxxx" %}
+
+		{% with forloop.parentloop.counter0 as y1 %}
+		{% with forloop.counter0 as x1 %}
+		
+		<td>
+	
+		{% for key, value in unitconverter.items %}
+			{% if value.Y|stringformat:"i" == y1|stringformat:"i" and value.X|stringformat:"i" == x1|stringformat:"i"  %}
+
+<div style="width:238px;margin:0px auto;"><div style="width:99.5%;border:1px solid #2D6AB4;border-top:none;border-bottom:none;text-align:center; height:24px;font-size:16px;padding:5px 0px 0px 0px;border-top-right-radius:5px; border-top-left-radius:5px;background-color:{{value.backgroundColor}};color:#FFFFFF; font-weight:bold;"><a href="http://www.theunitconverter.com/" style="color:#FFFFFF; text-decoration:none;" rel="nofollow">{{value.unit}} Conversion</a></div><script type="text/javascript" src="http://ww.theunitconverter.com/converter.php?l=en&t=1&c=0&a=FFFFFF&d=000000&b=2D6AB4&s={{value.unit}}"></script></div>
+
+			{% endif %}
+		{% endfor %}
+
+
+
+
+
+
+		{% for key, value in weather.items %}
+			{% if value.Y|stringformat:"i" == y1|stringformat:"i" and value.X|stringformat:"i" == x1|stringformat:"i"  %}
+
+			{% with "1" as name2 %} 
+			{% with value.X as name %}     
+
+
+
+
+<div id="weather_api">
+<h2>Weather Api</h2>
+<form name="weather_form" onsubmit="formNameInput({{name2}}{{name}}{{value.Y}})">
+<input type="text" name="city_{{name2}}{{name}}{{value.Y}}" placeholder="Search City.." required>
+<input type="submit" name="submit">
+</form>
+<div id="Weather">
+<span id="city_{{name2}}{{name}}{{value.Y}}"></span> 
+<span id="temperature_value_{{name2}}{{name}}{{value.Y}}"></span> 
+<span id="temperature_type_{{name2}}{{name}}{{value.Y}}">C</span>°
+</div>
+<input type="radio" name="temperature_type_{{name2}}{{name}}{{value.Y}}" onchange="changeRadio({{name2}}{{name}}{{value.Y}})" value="0" checked> Celsius 
+<input type="radio" name="temperature_type_{{name2}}{{name}}{{value.Y}}" onchange="changeRadio({{name2}}{{name}}{{value.Y}})" value="1"> Fahrenheit
+</div>
+
+
+
+			<script>
+				array[{{value.X}}][{{value.Y}}]=1;
+			</script>
+
+
+			{% endwith %}
+			{% endwith %}
+
+
+
+
+			{% endif %}
+		{% endfor %}
+
+
+
+		{% for key, value in currency.items %}
+			{% if value.Y|stringformat:"i" == y1|stringformat:"i" and value.X|stringformat:"i" == x1|stringformat:"i"  %}
+
+
+{% with "1" as name2 %} 
+{% with value.X as name %}     
+<div id="currency_api">
+	<h2>Currency Api</h2>
+		<select id="currency_select_{{name2}}{{name}}{{value.Y}}">
+			<option value="USD">usd</option>
+			<option value="TRY">try</option>
+		</select>
+		<input type="text" name="currency_amount_{{name2}}{{name}}{{value.Y}}" placeholder="amount">
+		<input type="submit" name="submit" onclick="convertCurrency({{name2}}{{name}}{{value.Y}})">
+
+	<div id="currency">
+		<span id="currency_result_{{name2}}{{name}}{{value.Y}}">0</span>
+	</div>
+</div>
+{% endwith %}
+{% endwith %}
+
+
+
+			{% endif %}
+		{% endfor %}
+
+
+
+
+		{% for key, value in livescore.items %}
+			{% if value.Y|stringformat:"i" == y1|stringformat:"i" and value.X|stringformat:"i" == x1|stringformat:"i"  %}
+
+<iframe src="http://livescores.website/widgetsoccerblue" frameborder="0" scrolling="yes" style="border:none;width:{{value.width}}px;min-height:{{value.height}}px;overflow: scroll"></iframe>
+
+			{% endif %}
+		{% endfor %}
+
+
+
+
+		{% for key, value in clock.items %}
+			{% if value.Y|stringformat:"i" == y1|stringformat:"i" and value.X|stringformat:"i" == x1|stringformat:"i"  %}
+
+<div style="text-align:center;width:400px;padding:1em 0;"> <h2><a style="text-decoration:none;" href="http://www.zeitverschiebung.net/en/city/323786"><span style="color:{{value.Color}};">Current local time in</span><br />Ankara, Turkey</a></h2> <iframe src="http://www.zeitverschiebung.net/clock-widget-iframe-v2?language=en&timezone=Europe%2FIstanbul" width={{value.width}} height={{value.height}} frameborder="0" seamless></iframe> <small style="color:{{value.Color}};">&copy; <a href="http://www.zeitverschiebung.net/en/" style="color:{{value.Color}};">Time Difference</a></small> </div>
+
+			{% endif %}
+		{% endfor %}
+
+
+
+
+
+
+		{% for key, value in map.items %}
+			{% if value.Y|stringformat:"i" == y1|stringformat:"i" and value.X|stringformat:"i" == x1|stringformat:"i"  %}
+
+
+
+
+<div id="map" style="width:100%;height:250px"></div>
+<script>
+function myMap() {
+  var mapCanvas = document.getElementById("map");
+  var mapOptions = {
+    center: new google.maps.LatLng({{value.lat}}, {{value.lng}}),
+    zoom: {{value.zoom}}
+  }
+  var map = new google.maps.Map(mapCanvas, mapOptions);
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?callback=myMap"></script>
+
+			{% endif %}
+
+		{% endfor %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			<form action="#" method="get">
+			 <input type="text" value="" name="mytextboxl" size="15"/>
+			 <input type="submit" class="btnl" value="add" name="{{x1}}{{y1}}">
+			</form>
+
+			<form action="#" method="get">
+			<input type="submit" class="btnr" value="remove" name="{{x1}}{{y1}}r">
+			</form>
+
+
+
+
+	
+
+
+		</td>
+		{% endwith %}
+		{% endwith %}
+		{% endfor %}
+	</tr>
+	{% endfor %}
+
+</table>
+
+
+<p id="printer">
+
+</p>
+
+<script>
+
+for (var i = 0; i < 10; i++) {
+
+//	var as=document.getElementById("printer");		
+	for (var j = 0; j < 5; j++) {
+		console.log(array[i][j]);
+//		as.innerHTML=array[i][j];
+
+	}
+  
+}
+</script>
+
+-->
+
+
+
+</head>
+
+<body>
+</body>
+</html>

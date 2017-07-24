@@ -1,0 +1,8 @@
+#home {background:url(images/body-bg.gif) center top #37271c;font-family:Tahoma,Geneva,sans-serif;font-size:100%;line-height:1.125em;color:#bca695}
+#logo {margin-top:40px;margin-left:20px;}
+#name {color:#766B4B;position:absolute;top:25px;left:90px;text-transform:uppercase;font-style:normal;font-size:50px;font-family:"Trebuchet MS",Arial,Helvetica,sans-serif;font-weight:bold;padding-left:5px}
+#components  {width:570px;height:535px; margin: 80px 20px;} 
+.cells td{background:url(images/components.gif); width:550px; height:175px;}
+
+
+.header-box {background:url(images/header-bg1.jpg) no-repeat left top;width:950px;height:364px}
