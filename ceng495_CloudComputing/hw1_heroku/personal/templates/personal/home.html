@@ -1,0 +1,291 @@
+<!DOCTYPE html >
+<html>
+<head>
+
+{% load staticfiles %}
+{% block content %}
+
+
+<div id="right-logo">
+	<h1> <img src="{% static 'personal/img/ceng.png' %}" style="width:65px;height:65px;", align='right'> 
+	</h1>
+</div>
+
+<div id="left-logo">
+	<h1> <img src="{% static 'personal/img/metu.png' %}" style="width:65px;height:65px;", align='left'> 
+	</h1>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+<script>
+
+function convertCurrency() {
+
+	var amount= parseInt($('input[id="currency_amount"]').val())
+	//if(isNaN(amount) || amount >9999999999)
+	if(isNaN(amount))
+	{					   
+		//console.log("isnan icinde")
+		return false;
+	}
+//	console.log("cikdim")
+	var curr1 = $('select#currency_select1').val()
+	var curr2 = $('select#currency_select2').val()
+
+
+	$.ajax({
+		method: 'GET',				
+		url: 'https://api.fixer.io/latest?symbols='+curr1+','+curr2
+
+
+	}).then(function (response) {
+		var n1 = parseInt($('input[id="currency_amount"]').val())
+
+		if(curr1=="USD")
+			var rate1=response.rates.USD
+		else if(curr1=="TRY")
+			var rate1=response.rates.TRY
+		else if(curr1=="JPY")
+			var rate1=response.rates.JPY
+		else if(curr1=="BGN")
+			var rate1=response.rates.BGN
+		else if(curr1=="CZK")
+			var rate1=response.rates.CZK
+		else if(curr1=="DKK")
+			var rate1=response.rates.DKK
+		else if(curr1=="GBP")
+			var rate1=response.rates.GBP
+		else if(curr1=="HUF")
+			var rate1=response.rates.HUF
+		else if(curr1=="PLN")
+			var rate1=response.rates.PLN
+		else if(curr1=="RON")
+			var rate1=response.rates.RON
+		else if(curr1=="SEK")
+			var rate1=response.rates.SEK
+		else if(curr1=="CHF")
+			var rate1=response.rates.CHF
+		else if(curr1=="NOK")
+			var rate1=response.rates.NOK
+		else if(curr1=="HRK")
+			var rate1=response.rates.HRK
+		else if(curr1=="RUB")
+			var rate1=response.rates.RUB
+		else if(curr1=="AUD")
+			var rate1=response.rates.AUD
+		else if(curr1=="BRL")
+			var rate1=response.rates.BRL
+		else if(curr1=="CAD")
+			var rate1=response.rates.CAD
+		else if(curr1=="CNY")
+			var rate1=response.rates.CNY
+		else if(curr1=="HKD")
+			var rate1=response.rates.HKD
+		else if(curr1=="IDR")
+			var rate1=response.rates.IDR
+		else if(curr1=="ILS")
+			var rate1=response.rates.ILS
+		else if(curr1=="INR")
+			var rate1=response.rates.INR
+		else if(curr1=="KRW")
+			var rate1=response.rates.KRW
+		else if(curr1=="MXN")
+			var rate1=response.rates.MXN
+		else if(curr1=="MYR")
+			var rate1=response.rates.MYR
+		else if(curr1=="NZD")
+			var rate1=response.rates.NZD
+		else if(curr1=="PHP")
+			var rate1=response.rates.PHP
+		else if(curr1=="SGD")
+			var rate1=response.rates.SGD
+		else if(curr1=="THB")
+			var rate1=response.rates.THB
+		else if(curr1=="ZAR")
+			var rate1=response.rates.ZAR
+		else if(curr1=="ISK")
+			var rate1=response.rates.ISK
+
+		if(curr2=="USD")
+			var rate2=response.rates.USD
+		else if(curr2=="TRY")
+			var rate2=response.rates.TRY
+		else if(curr2=="JPY")
+			var rate2=response.rates.JPY
+		else if(curr2=="BGN")
+			var rate2=response.rates.BGN
+		else if(curr2=="CZK")
+			var rate2=response.rates.CZK
+		else if(curr2=="DKK")
+			var rate2=response.rates.DKK
+		else if(curr2=="GBP")
+			var rate2=response.rates.GBP
+		else if(curr2=="HUF")
+			var rate2=response.rates.HUF
+		else if(curr2=="PLN")
+			var rate2=response.rates.PLN
+		else if(curr2=="RON")
+			var rate2=response.rates.RON
+		else if(curr2=="SEK")
+			var rate2=response.rates.SEK
+		else if(curr2=="CHF")
+			var rate2=response.rates.CHF
+		else if(curr2=="NOK")
+			var rate2=response.rates.NOK
+		else if(curr2=="HRK")
+			var rate2=response.rates.HRK
+		else if(curr2=="RUB")
+			var rate2=response.rates.RUB
+		else if(curr2=="AUD")
+			var rate2=response.rates.AUD
+		else if(curr2=="BRL")
+			var rate2=response.rates.BRL
+		else if(curr2=="CAD")
+			var rate2=response.rates.CAD
+		else if(curr2=="CNY")
+			var rate2=response.rates.CNY
+		else if(curr2=="HKD")
+			var rate2=response.rates.HKD
+		else if(curr2=="IDR")
+			var rate2=response.rates.IDR
+		else if(curr2=="ILS")
+			var rate2=response.rates.ILS
+		else if(curr2=="INR")
+			var rate2=response.rates.INR
+		else if(curr2=="KRW")
+			var rate2=response.rates.KRW
+		else if(curr2=="MXN")
+			var rate2=response.rates.MXN
+		else if(curr2=="MYR")
+			var rate2=response.rates.MYR
+		else if(curr2=="NZD")
+			var rate2=response.rates.NZD
+		else if(curr2=="PHP")
+			var rate2=response.rates.PHP
+		else if(curr2=="SGD")
+			var rate2=response.rates.SGD
+		else if(curr2=="THB")
+			var rate2=response.rates.THB
+		else if(curr2=="ZAR")
+			var rate2=response.rates.ZAR
+		else if(curr2=="ISK")
+			var rate2=response.rates.ISK
+
+
+		var result=n1*(rate2/rate1)
+					
+		$('span#currency_result').text(result)
+	})
+
+//debugger;
+
+
+}</script>
+
+<script type="text/javascript">
+	function validateForm()
+	{
+		var a=document.forms["Form"]["amount"].value;
+		if(a.length == 0 || a.length>10)
+		{
+			return false;
+		}
+    }
+</script>
+</head>
+
+
+	<body>
+		<div id="currency_api", align='middle'>
+		<h2>Currency Converter</h2>
+		<b>Amount: &nbsp&nbsp&nbsp&nbsp &nbsp&nbsp&nbsp&nbsp &nbsp&nbsp&nbsp&nbsp &nbsp </b>
+		<b>From: &nbsp&nbsp &nbsp&nbsp&nbsp&nbsp&nbsp  &nbsp&nbsp&nbsp&nbsp &nbsp&nbsp&nbsp&nbsp </b> 
+		<b>To: &nbsp&nbsp&nbsp&nbsp &nbsp&nbsp&nbsp&nbsp &nbsp&nbsp&nbsp&nbsp  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp &nbsp&nbsp&nbsp</b>
+		<p></p>			
+		<form name="Form" onsubmit="return validateForm()" action="javascript:convertCurrency();">
+		<div>		
+			<input  id="currency_amount" name="amount" type="number" placeholder="amount" value="1">
+			<select id="currency_select1">
+				<option value="USD">US dollar</option>
+				<option value="TRY">Turkish lira</option>
+				<option value="JPY">Japanese yen</option>
+				<option value="BGN">Bulgarian lev</option>
+				<option value="CZK">Czech koruna</option>
+				<option value="DKK">Danish krone</option>
+				<option value="GBP">Pound sterling</option>
+				<option value="HUF">Hungarian forint</option>
+				<option value="PLN">Polish zloty</option>
+				<option value="RON">Romanian leu</option>
+				<option value="SEK">Swedish krone</option>
+				<option value="CHF">Swiss franc</option>
+				<option value="NOK">Norwegian krone</option>
+				<option value="HRK">Croatian kuna</option>
+				<option value="RUB">Russian rouble</option>
+				<option value="AUD">Australian dollar</option>
+				<option value="BRL">Brazilian real</option>
+				<option value="CAD">Canadian dollar</option>
+				<option value="CNY">Chinese yuan</option>
+				<option value="HKD">Hong Kong dollar</option>
+				<option value="IDR">Indonesian rupiah</option>
+				<option value="ILS">Israeli shekel</option>
+				<option value="INR">Indian rupee</option>
+				<option value="KRW">South Korean won</option>
+				<option value="MXN">Mexican peso</option>
+				<option value="MYR">Malaysian ringgit</option>
+				<option value="NZD">New Zealand dollar</option>
+				<option value="PHP">Philippine peso</option>
+				<option value="SGD">Singapore dollar</option>
+				<option value="THB">Thai baht</option>
+				<option value="ZAR">South African rand</option>
+				<option value="ISK">Icelandic krona</option>
+			</select>
+			<select id="currency_select2">
+				<option value="USD">US dollar</option>
+				<option value="TRY">Turkish lira</option>
+				<option value="JPY">Japanese yen</option>
+				<option value="BGN">Bulgarian lev</option>
+				<option value="CZK">Czech koruna</option>
+				<option value="DKK">Danish krone</option>
+				<option value="GBP">Pound sterling</option>
+				<option value="HUF">Hungarian forint</option>
+				<option value="PLN">Polish zloty</option>
+				<option value="RON">Romanian leu</option>
+				<option value="SEK">Swedish krone</option>
+				<option value="CHF">Swiss franc</option>
+				<option value="NOK">Norwegian krone</option>
+				<option value="HRK">Croatian kuna</option>
+				<option value="RUB">Russian rouble</option>
+				<option value="AUD">Australian dollar</option>
+				<option value="BRL">Brazilian real</option>
+				<option value="CAD">Canadian dollar</option>
+				<option value="CNY">Chinese yuan</option>
+				<option value="HKD">Hong Kong dollar</option>
+				<option value="IDR">Indonesian rupiah</option>
+				<option value="ILS">Israeli shekel</option>
+				<option value="INR">Indian rupee</option>
+				<option value="KRW">South Korean won</option>
+				<option value="MXN">Mexican peso</option>
+				<option value="MYR">Malaysian ringgit</option>
+				<option value="NZD">New Zealand dollar</option>
+				<option value="PHP">Philippine peso</option>
+				<option value="SGD">Singapore dollar</option>
+				<option value="THB">Thai baht</option>
+				<option value="ZAR">South African rand</option>
+				<option value="ISK">Icelandic krona</option>
+			</select>
+			<input type="submit" name="submit" value="convert"> 
+		</div>
+		</form>
+	</div>
+			<div id="result", align="middle">
+			result=<span id="currency_result">0</span>
+			</div>
+	</body>
+
+{% endblock %}
+
+<html>
+
+
