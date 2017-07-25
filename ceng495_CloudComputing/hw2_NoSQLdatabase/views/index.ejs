@@ -1,0 +1,120 @@
+<html>
+<head>
+<style>
+    .hidden { display: none; }
+    td { padding: 5px; }
+</style>
+</head>
+
+<title>CENG495 HW2</title>
+<div id="right-logo">
+    <h1> <img src="images/ceng.png" style="width:65px;height:65px;", align='right'> </h1>
+</div>
+
+<div id="left-logo">
+    <h1> <img src="images/metu.png" style="width:65px;height:65px;", align='left'> </h1>
+</div>
+
+</head>
+
+<body>
+<div id="title", align="center">
+    <h2>CLOUD COMPUTING HOMEWORK2<h2>
+</div>
+
+<div id="formContainer" class="form hidden" align="center">
+    <form id="formForMovie" method="post">
+        <div>
+            <label>Add New Movie</label>
+        </div>
+
+        <div>
+            <label> Release Date:</label>
+            <input id="dater" name="release_date" type="date">
+        </div>
+
+        <div>
+            <label>Movie Name:</label>
+            <input id="namer" name="movie_name" type="text">
+        </div>
+        <div>
+            <label>Tags:</label>
+            <input id="tager" name="tags" type="text">
+        </div>
+
+        <div>
+            <label>Url:</label>
+            <input id="urler" name="url" type="url">
+        </div>
+
+        <div id="idForExtraField">
+            <label>Actors:</label>
+            <input id="actorser" name="actors" type="text">
+        </div>
+
+        <div>
+            <button id="adder" type="button" onClick="addInput('idForExtraField');" class="dis">
+            	Add extra fields
+        	</button>
+        </div>
+
+        <div>
+            <input id="sender" value="Send" class="dis" type="submit">
+        </div>
+    </form>
+</div>
+
+
+<div align="center">
+    <button class="toggler dis">Show Add Options</button>
+</div>
+
+<div align="center">
+    <button class="toggler hidden dis">Hide Add Options</button>
+</div>
+
+<div align="center">
+    <span id="spinner" class="hidden"></span>
+</div>
+
+<% if (data.length > 0) { %>
+<% data.forEach(function(d, index) { %>
+<table id="table_data" class="table_data" align="center" border='3'>
+    <tr id="hmovie_<%= index %>">
+        <% Object.getOwnPropertyNames(d).forEach(function(prop) { %>
+            <% if (prop === '_id') return; %>
+            <!--TODO-->
+            <td><%= prop.split('_').map(s => (s.capitalize())).join(' ') %></td>
+        <% }) %>
+        <td>Edit</td>
+        <td>Delete</td>
+    </tr>
+    <tr id="dmovie_<%= index %>">
+        <% Object.getOwnPropertyNames(d).forEach(function(prop) { %>
+            <% if (prop === '_id') return; %>
+            <td class="<%= prop %>">
+                <span><%= d[prop] %></span>
+                <input type="text" class="hidden" name="<%= prop %>" value="<%= d[prop] %>" style="max-width: 100px;">
+            </td>
+        <% })%>
+        <td class="editing">
+            <button class="edit dis" id="edit" onclick="editRow(<%= index %>)">Edit</button>
+            <button class="edit hidden dis" id="save" onclick="editRow(<%= index %>, '<%= d._id %>')">Save</button>
+        </td>
+        <td class="delete">
+            <form method="post" action="/delete">
+                <input type="hidden" name="id" value="<%= d._id %>">
+                <input type="submit" class="dis" value="Delete">
+            </form>
+        </td>
+    </tr>
+</table>
+<% }) %>
+<% } %>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+<script src="javascripts/ejs.min.js"></script>
+<script src="javascripts/script.js"></script>
+</body>
+</html>
