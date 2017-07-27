@@ -1,0 +1,9 @@
+Usage:
+	To compile:
+	javac machine3.java
+
+	To Run:
+	java machine3 <Data> <k> <query>
+		example:
+		java machine3 ./Data/Data-Grades.csv 5 91 92 93 94 95
+

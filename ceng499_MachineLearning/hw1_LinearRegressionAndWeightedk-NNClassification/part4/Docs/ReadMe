@@ -1,0 +1,14 @@
+Usage:
+	to compile:
+	javac -cp Jama-1.0.3.jar machine4.java
+	
+	to run on Linux:
+	java -cp .:Jama-1.0.3.jar machine4	<windowsize> <Data1> <Data2> <stepSize> <stoppingCondition>
+		example:
+			java -cp .:Jama-1.0.3.jar machine4 6 ./Data/GOOG-2016.csv ./Data/GOOG-2017.csv 0.00001 0.000001		
+
+	to run on Windows:
+	java -cp .;Jama-1.0.3.jar machine4	<windowsize> <Data1> <Data2> <stepSize> <stoppingCondition>
+		example:
+			java -cp .;Jama-1.0.3.jar machine4 6 ./Data/GOOG-2016.csv ./Data/GOOG-2017.csv 0.00001 0.000001	
+
