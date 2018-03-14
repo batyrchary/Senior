@@ -163,7 +163,7 @@ public class Question5
         
         ////////////////////////////////////////////////////
         Job job2 = new Job(conf, "Job2");
-
+        job2.setJarByClass(Question5.class);
         
         job2.setMapOutputKeyClass(LongWritable.class);
         job2.setMapOutputValueClass(Text.class);
@@ -190,6 +190,7 @@ public class Question5
    
         
         Job job3 = new Job(conf, "Job3");
+        job3.setJarByClass(Question5.class);
 
 
         job3.setMapOutputKeyClass(LongWritable.class);
