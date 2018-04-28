@@ -1,0 +1,17 @@
+please use jar file.
+
+
+how to run:
+
+	//if you want 10 retweeted users to be printed on terminal
+	
+		java -jar Q17.jar <path_to_tweets>
+
+	//if you want to write all retweeted users with number of occurence to a file
+	
+		java -jar Q17.jar <path_to_tweets> <path_output>
+Example:
+
+	java -jar Q17.jar /home/hadoop1/Desktop/twitter/training_set_tweets.txt
+
+	java -jar Q17.jar /home/hadoop1/Desktop/twitter/training_set_tweets.txt  result
