@@ -1,0 +1,17 @@
+please use jar file.
+
+
+how to run:
+
+	//if you want output to be printed on terminal
+	
+		java -jar Q18.jar <path_to_tweets> <path_to_users>
+
+	//if you want to write output to a file
+	
+		java -jar Q18.jar <path_to_tweets> <path_to_users> <path_output>
+Example:
+
+	java -jar Q18.jar /home/hadoop1/Desktop/twitter/training_set_tweets.txt /home/hadoop1/Desktop/twitter/training_set_users.txt
+
+	java -jar Q18.jar /home/hadoop1/Desktop/twitter/training_set_tweets.txt /home/hadoop1/Desktop/twitter/training_set_users.txt result
