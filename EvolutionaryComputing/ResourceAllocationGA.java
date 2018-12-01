@@ -37,7 +37,9 @@ public class ResourceAllocationGA {
         int priority;
         float CPUrequest;
         float memoryRequest;
-        public Task(String time, String jobID, int taskIndex, int eventType, int priority, float CPUrequest, float memoryRequest)
+
+        public int probID;
+        public Task(String time, String jobID, int taskIndex, int eventType, int priority, float CPUrequest, float memoryRequest, int probID)
         {
             this.time=time;
             this.jobID=jobID;
@@ -46,6 +48,8 @@ public class ResourceAllocationGA {
             this.priority=priority;
             this.CPUrequest=CPUrequest;
             this.memoryRequest=memoryRequest;
+
+            this.probID=probID;
         }
         public  float getCPU()
         {
@@ -65,8 +69,13 @@ public class ResourceAllocationGA {
         public String platformID;
         public float CPU;
         public float Memory;
+        public float CPUleft;
+        public float Memoryleft;
 
-        public Machine(String time, String machineID, int eventType, String platformID, float CPU, float Memory)
+        public String server;
+
+
+        public Machine(String time, String machineID, int eventType, String platformID, float CPU, float Memory, String server)
         {
             this.time=time;
             this.machineID=machineID;
@@ -74,6 +83,10 @@ public class ResourceAllocationGA {
             this.platformID=platformID;
             this.CPU=CPU;
             this.Memory=Memory;
+            this.CPUleft=CPU;
+            this.Memoryleft=Memory;
+
+            this.server=server;
         }
     }
 
@@ -81,7 +94,7 @@ public class ResourceAllocationGA {
     {
         public int prob;
         public String server;
-       // public float latency;
+        // public float latency;
         public Pair(int p, String s)//, float l )
         {
             this.prob=p;
@@ -160,7 +173,7 @@ public class ResourceAllocationGA {
         {
             Chromosome c=new Chromosome();
 
-           // for (int i = 0; i < numberOfHeur; i++)
+            // for (int i = 0; i < numberOfHeur; i++)
             for (int i = 0; i < number_of_allocations; i++)
             {
                 Gene g=new Gene();
@@ -191,7 +204,6 @@ public class ResourceAllocationGA {
                 }
             });
             ret.sort(Comparator.comparingDouble(Task::getCPU)); //smallest to largest
-          //  Collections.reverse(ret);                           //reverse
         }
 
         if(type.equals("Memory"))
@@ -202,7 +214,6 @@ public class ResourceAllocationGA {
                 }
             });
             ret.sort(Comparator.comparingDouble(Task::getMemory)); //smallest to largest
-            //  Collections.reverse(ret);                           //reverse
         }
 
         if(typeOfOrder.equals("decreasing"))
@@ -213,12 +224,28 @@ public class ResourceAllocationGA {
     }
 
 
+    public static boolean FitsToMachine(Machine m, Task t)
+    {
+        if(m.CPUleft>t.CPUrequest && m.Memoryleft>t.memoryRequest)
+            return true;
+        return false;
+    }
+    public static Machine UpdateMachine(Machine m, Task t)
+    {
+        Machine mUpdated=m;
+
+        mUpdated.CPUleft=m.CPUleft-t.CPUrequest;
+        mUpdated.Memoryleft=m.Memoryleft-t.memoryRequest;
+
+        return mUpdated;
+    }
+
     public static int individualFitness(Chromosome individual)
     {
         int score=0;
 
-        ArrayList<Integer> probsTemp=probsConsidered;
         ArrayList<Task> tasksTemp=TaskEventsConsidered;
+        ArrayList<Pair> assignmentPairs=new ArrayList<>();
 
 
         ArrayList<Task> decreasingTasksSortedByCPU=TaskSorter(tasksTemp,"CPU","decreasing");
@@ -227,7 +254,6 @@ public class ResourceAllocationGA {
         ArrayList<Task> increasingTasksSortedByMemory=TaskSorter(tasksTemp,"Memory","increasing");
 
         ArrayList<Task> AllocatedTasks=new ArrayList<>();
-
         ArrayList<Machine> openMachines=new ArrayList<>();
 
 
@@ -241,7 +267,7 @@ public class ResourceAllocationGA {
 
             if(HeuristicCode==0 || HeuristicCode==1 || HeuristicCode==10 || HeuristicCode==12 ) //FirstFit, BestFit, NextFit,
             {
-                Task taskToBeAssigned;
+                Task taskToBeAssigned=null;
                 if(parameter==0) //decreasingTasksSortedByCPU
                 {
                     for(int t=0; t<decreasingTasksSortedByCPU.size(); t++)
@@ -289,7 +315,33 @@ public class ResourceAllocationGA {
                 /////////////////////apply heuristics
                 if(HeuristicCode==0)                //FirstFit
                 {
+                    String serverId="";
+                    for(int m=0; m<openMachines.size(); m++)
+                    {
+                        if(FitsToMachine(openMachines.get(m),taskToBeAssigned))
+                        {
+                            openMachines.set(m, UpdateMachine(openMachines.get(m),taskToBeAssigned));
+                            serverId=openMachines.get(m).server;
+                            break;
+                        }
+                    }
+                    for(int m=0; m<MachineEvents.size(); m++)
+                    {
+                        Machine machine=MachineEvents.get(m);
+                        if(!openMachines.contains(machine) && FitsToMachine(machine,taskToBeAssigned))
+                        {
+                            machine=UpdateMachine(machine,taskToBeAssigned);
 
+                            openMachines.add(machine);
+                            serverId=machine.server;
+                            break;
+                        }
+                    }
+
+                    AllocatedTasks.add(taskToBeAssigned);
+
+                    int probID=taskToBeAssigned.probID;
+                    assignmentPairs.add(new Pair(probID,serverId));
                 }
                 else if(HeuristicCode==1)           //BestFit
                 {
@@ -368,84 +420,11 @@ public class ResourceAllocationGA {
             TaskEventsConsidered.add(TaskEvents.get(i));
         }
 
-      //  GA(50,5,0.5f); //population,consequtive generations fitness is not changing, difference in fitness
+        //  GA(50,5,0.5f); //population,consequtive generations fitness is not changing, difference in fitness
     }
 
     public static void ReadData(String ServerUserLatencyMapping, String machineEvents, String taskEvents)
     {
-        try
-        {
-            File file = new File(taskEvents);
-
-            for(File f: file.listFiles())
-            {
-                BufferedReader br = new BufferedReader(new FileReader(f));
-                String line;
-                while ((line = br.readLine()) != null)
-                {
-                    String splitted[]=line.split(",");
-
-                    if(splitted.length>=11 && (!splitted[10].equals("")) && (!splitted[9].equals("")))
-                    {
-
-                        String time = splitted[0];                        //mandatory(int)
-                    //    int missingInfo = Integer.parseInt(splitted[1]);
-                        String jobID = splitted[2];                       //mandatory(int)
-                        int taskIndex = Integer.parseInt(splitted[3]);    //mandatory
-                    //    int machineID = Integer.parseInt(splitted[4]);
-                        int eventType = Integer.parseInt(splitted[5]);    //mandatory
-                    //    String user = splitted[6];
-                    //    int schedulingClass = Integer.parseInt(splitted[7]);
-                        int priority = Integer.parseInt(splitted[8]);     //mandatory
-                        float CPUrequest = Float.parseFloat(splitted[9]);
-                        float memoryRequest = Float.parseFloat(splitted[10]);
-                    //    float diskSpaceRequest = Float.parseFloat(splitted[11]);
-                    //    boolean differentMachineRestriction = Boolean.getBoolean(splitted[12]);
-
-                        TaskEvents.add(new Task(time,jobID,taskIndex,eventType,priority,CPUrequest,memoryRequest));
-                        //System.out.println(line);
-                    }
-                }
-                br.close();
-            }
-        }catch (Exception e){
-            e.printStackTrace();
-            System.out.println("exception in reading taskevents");
-        }
-
-        try
-        {
-            File file = new File(machineEvents);
-
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = br.readLine()) != null) {
-
-
-                String splitted []=line.split(",");
-
-                String time;       //mandatory
-                String machineID;  //mandatory
-                int eventType;  //mandatory
-                String platformID;
-                float CPU;
-                float Memory;
-
-                if(splitted.length==6 && (!splitted[4].equals("")) && (!splitted[5].equals("")))
-                {
-                    time=splitted[0];
-                    machineID=splitted[1];
-                    eventType=Integer.parseInt(splitted[2]);
-                    platformID=splitted[3];
-                    CPU=Float.parseFloat(splitted[4]);
-                    Memory=Float.parseFloat(splitted[5]);
-
-                    MachineEvents.add(new Machine(time,machineID,eventType,platformID,CPU,Memory));
-                }
-            }
-            br.close();
-        }catch (Exception e){ System.out.println("exception in reading"); }
-
 
         ////
         try {
@@ -477,6 +456,90 @@ public class ResourceAllocationGA {
             }
             br.close();
         }catch (Exception e){ System.out.println("exception in reading2"); }
+
+        try
+        {
+            File file = new File(taskEvents);
+
+            for(File f: file.listFiles())
+            {
+                BufferedReader br = new BufferedReader(new FileReader(f));
+                String line;
+                int counter=0;
+                while ((line = br.readLine()) != null)
+                {
+                    String splitted[]=line.split(",");
+
+                    if(splitted.length>=11 && (!splitted[10].equals("")) && (!splitted[9].equals("")))
+                    {
+
+                        String time = splitted[0];                        //mandatory(int)
+                        //    int missingInfo = Integer.parseInt(splitted[1]);
+                        String jobID = splitted[2];                       //mandatory(int)
+                        int taskIndex = Integer.parseInt(splitted[3]);    //mandatory
+                        //    int machineID = Integer.parseInt(splitted[4]);
+                        int eventType = Integer.parseInt(splitted[5]);    //mandatory
+                        //    String user = splitted[6];
+                        //    int schedulingClass = Integer.parseInt(splitted[7]);
+                        int priority = Integer.parseInt(splitted[8]);     //mandatory
+                        float CPUrequest = Float.parseFloat(splitted[9]);
+                        float memoryRequest = Float.parseFloat(splitted[10]);
+                        //    float diskSpaceRequest = Float.parseFloat(splitted[11]);
+                        //    boolean differentMachineRestriction = Boolean.getBoolean(splitted[12]);
+
+                        int probId=probs.get(counter%probs.size());
+                        counter++;
+
+                        TaskEvents.add(new Task(time,jobID,taskIndex,eventType,priority,CPUrequest,memoryRequest,probId));
+                        //System.out.println(line);
+                    }
+                }
+                br.close();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            System.out.println("exception in reading taskevents");
+        }
+
+        try
+        {
+            File file = new File(machineEvents);
+
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            int counter=0;
+            while ((line = br.readLine()) != null) {
+
+                String splitted []=line.split(",");
+
+                String time;       //mandatory
+                String machineID;  //mandatory
+                int eventType;  //mandatory
+                String platformID;
+                float CPU;
+                float Memory;
+
+                if(splitted.length==6 && (!splitted[4].equals("")) && (!splitted[5].equals("")))
+                {
+                    time=splitted[0];
+                    machineID=splitted[1];
+                    eventType=Integer.parseInt(splitted[2]);
+                    platformID=splitted[3];
+                    CPU=Float.parseFloat(splitted[4]);
+                    Memory=Float.parseFloat(splitted[5]);
+
+                    String server=servers.get(counter%servers.size());
+                    counter++;
+
+                    MachineEvents.add(new Machine(time,machineID,eventType,platformID,CPU,Memory,server));
+                }
+            }
+            br.close();
+        }catch (Exception e){ System.out.println("exception in reading"); }
+
+
+
 
     }
 }
