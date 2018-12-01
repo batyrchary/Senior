@@ -1,12 +1,10 @@
 
 
+import javax.crypto.Mac;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 
 public class ResourceAllocationGA {
 
@@ -87,6 +85,15 @@ public class ResourceAllocationGA {
             this.Memoryleft=Memory;
 
             this.server=server;
+        }
+
+        public float getCPULeft()
+        {
+            return CPUleft;
+        }
+        public float getMemoryleft()
+        {
+            return Memoryleft;
         }
     }
 
@@ -191,10 +198,36 @@ public class ResourceAllocationGA {
 
 
 
+    public static ArrayList<Machine> MachineSorter(ArrayList<Machine> machines, String type, String typeOfOrder)
+    {
+        ArrayList<Machine> ret = machines;
+
+        if (type.equals("CPULeft")) {
+            Collections.sort(ret, new Comparator<Machine>() {
+                @Override
+                public int compare(Machine p1, Machine p2) {
+                    return (int) (p1.CPUleft - p2.CPUleft); // Ascending
+                }
+            });
+            ret.sort(Comparator.comparingDouble(Machine::getCPULeft)); //smallest to largest
+        }
+
+        if (type.equals("MemoryLeft")) {
+            Collections.sort(ret, new Comparator<Machine>() {
+                @Override
+                public int compare(Machine p1, Machine p2) {
+                    return (int) (p1.Memoryleft - p2.Memoryleft); // Ascending
+                }
+            });
+            ret.sort(Comparator.comparingDouble(Machine::getMemoryleft)); //smallest to largest
+        }
+        return ret;
+    }
+
+
     public static ArrayList<Task> TaskSorter(ArrayList<Task> tasks, String type, String typeOfOrder)
     {
         ArrayList<Task> ret=tasks;
-        ArrayList<Integer> indexes=new ArrayList<>();
 
         if(type.equals("CPU"))
         {
@@ -240,9 +273,36 @@ public class ResourceAllocationGA {
         return mUpdated;
     }
 
-    public static int individualFitness(Chromosome individual)
+    public static float ComputeScore(ArrayList<Pair> assignmentPairs)
     {
-        int score=0;
+        float score=0;
+        int maximumNumberOfMachines=MachineEvents.size();
+        float maxLatencyInMap=(Collections.max(latencies.values()));
+
+        float maxLatency=maxLatencyInMap*assignmentPairs.size();
+
+        int numberOfMachines=0;
+        float overallLatency=0;
+
+        HashSet noDupSet = new HashSet();
+
+
+        for(int i=0; i<assignmentPairs.size(); i++)
+        {
+            noDupSet.add(assignmentPairs.get(i).server);
+        }
+        numberOfMachines=noDupSet.size();
+
+        score=2*(maxLatency-overallLatency) + (maximumNumberOfMachines-numberOfMachines);
+
+        return score;
+    }
+
+
+    public static float individualFitness(Chromosome individual)
+    {
+        float score=0;
+        int nextFitOffset=0;
 
         ArrayList<Task> tasksTemp=TaskEventsConsidered;
         ArrayList<Pair> assignmentPairs=new ArrayList<>();
@@ -255,6 +315,7 @@ public class ResourceAllocationGA {
 
         ArrayList<Task> AllocatedTasks=new ArrayList<>();
         ArrayList<Machine> openMachines=new ArrayList<>();
+
 
 
         for(int i=0; i<number_of_allocations; i=i+numberOfBitsInGene)
@@ -313,50 +374,112 @@ public class ResourceAllocationGA {
                     }
                 }
                 /////////////////////apply heuristics
-                if(HeuristicCode==0)                //FirstFit
+                Machine machineToAllocate=null;
+
+                if(HeuristicCode==0 || HeuristicCode==11)                //FirstFit
                 {
-                    String serverId="";
+                    boolean NotFoundInOpen=true;
                     for(int m=0; m<openMachines.size(); m++)
                     {
                         if(FitsToMachine(openMachines.get(m),taskToBeAssigned))
                         {
-                            openMachines.set(m, UpdateMachine(openMachines.get(m),taskToBeAssigned));
-                            serverId=openMachines.get(m).server;
+                            machineToAllocate=openMachines.get(m);
+                            NotFoundInOpen=false;
                             break;
                         }
                     }
-                    for(int m=0; m<MachineEvents.size(); m++)
+                    if(NotFoundInOpen)
                     {
-                        Machine machine=MachineEvents.get(m);
-                        if(!openMachines.contains(machine) && FitsToMachine(machine,taskToBeAssigned))
+                        for (int m = 0; m < MachineEvents.size(); m++)
                         {
-                            machine=UpdateMachine(machine,taskToBeAssigned);
-
-                            openMachines.add(machine);
-                            serverId=machine.server;
-                            break;
+                            Machine machine = MachineEvents.get(m);
+                            if (!openMachines.contains(machine) && FitsToMachine(machine, taskToBeAssigned)) {
+                                machineToAllocate = machine;
+                                break;
+                            }
                         }
                     }
-
-                    AllocatedTasks.add(taskToBeAssigned);
-
-                    int probID=taskToBeAssigned.probID;
-                    assignmentPairs.add(new Pair(probID,serverId));
                 }
                 else if(HeuristicCode==1)           //BestFit
                 {
+                    ArrayList<Machine> openMachinesSortedByMemoryLeft=MachineSorter(openMachines,"MemoryLeft","NA");
+                   // ArrayList<Machine> openMachinesSortedByCPULeft=MachineSorter(openMachines,"CPULeft","NA");
 
+                    boolean NotFoundInOpen=true;
+                    for(int m=0; m<openMachinesSortedByMemoryLeft.size(); m++)
+                    {
+                        if(FitsToMachine(openMachinesSortedByMemoryLeft.get(m),taskToBeAssigned))
+                        {
+                            machineToAllocate=openMachinesSortedByMemoryLeft.get(m);
+                            NotFoundInOpen=false;
+                            break;
+                        }
+                    }
+                    if(NotFoundInOpen)
+                    {
+                        ArrayList<Machine> MachinesSortedByMemoryLeft=MachineSorter(MachineEvents,"MemoryLeft","NA");
+                       // ArrayList<Machine> MachinesSortedByCPULeft=MachineSorter(MachineEvents,"CPULeft","NA");
+
+                        for (int m = 0; m < MachinesSortedByMemoryLeft.size(); m++)
+                        {
+                            Machine machine = MachinesSortedByMemoryLeft.get(m);
+                            if (!openMachines.contains(machine) && FitsToMachine(machine, taskToBeAssigned)) {
+                                machineToAllocate = machine;
+                                break;
+                            }
+                        }
+                    }
                 }
                 else if(HeuristicCode==10)          //NextFit
                 {
+                    boolean NotFoundInOpen=true;
+                    for(;nextFitOffset<openMachines.size();nextFitOffset++)
+                    {
+                        if(FitsToMachine(openMachines.get(nextFitOffset),taskToBeAssigned))
+                        {
+                            machineToAllocate=openMachines.get(nextFitOffset);
+                            NotFoundInOpen=false;
+                            break;
+                        }
+                    }   //dont have to increment nextFitOffset
 
+                    if(NotFoundInOpen)
+                    {
+                        for (int m = 0; m < MachineEvents.size(); m++)
+                        {
+                            Machine machine = MachineEvents.get(m);
+                            if (!openMachines.contains(machine) && FitsToMachine(machine, taskToBeAssigned)) {
+                                machineToAllocate = machine;
+                                break;
+                            }
+                        }
+                    }
                 }
-                else if(HeuristicCode==11)
+             //   else if(HeuristicCode==11)
+               // {
+
+//                }
+
+                AllocatedTasks.add(taskToBeAssigned);
+
+                if(!openMachines.contains(machineToAllocate))
                 {
-
+                    openMachines.add(machineToAllocate);
                 }
+
+                int indexInOpen=openMachines.indexOf(machineToAllocate);
+                int indexInMachineEvent=MachineEvents.indexOf(machineToAllocate);
+
+                openMachines.set(indexInOpen,UpdateMachine(machineToAllocate,taskToBeAssigned));
+                MachineEvents.set(indexInMachineEvent,UpdateMachine(machineToAllocate,taskToBeAssigned));
+
+
+                int probID=taskToBeAssigned.probID;
+                String serverId=machineToAllocate.server;
+                assignmentPairs.add(new Pair(probID,serverId));
             }
         }
+        score=ComputeScore(assignmentPairs);
         return score;
     }
 
@@ -420,7 +543,7 @@ public class ResourceAllocationGA {
             TaskEventsConsidered.add(TaskEvents.get(i));
         }
 
-        //  GA(50,5,0.5f); //population,consequtive generations fitness is not changing, difference in fitness
+          GA(50,5,0.5f); //population,consequtive generations fitness is not changing, difference in fitness
     }
 
     public static void ReadData(String ServerUserLatencyMapping, String machineEvents, String taskEvents)
