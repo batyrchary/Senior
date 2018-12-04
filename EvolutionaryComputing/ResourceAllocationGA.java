@@ -732,13 +732,11 @@ public class ResourceAllocationGA
         XORtype="TwoPoint";  //TwoPoint,SinglePoint
         ////////////////////////////////////////
 
-       // String p1=args[0]+"cloudU.csv";//"/Users/batyrchary/Desktop/projects/Sushil/cloudU.csv";
-        //String p2=args[0]+"part-00000-of-00001.csv";//"/Users/batyrchary/Desktop/traceData/machineevents/part-00000-of-00001.csv";
-        //String p3=args[1];//"/Users/batyrchary/Desktop/traceData/taskeventsincomplete/";
+      
 
-        String p1="/Users/batyrchary/Desktop/projects/Sushil/cloudU.csv";
-        String p2="/Users/batyrchary/Desktop/traceData/machineevents/part-00000-of-00001.csv";
-        String p3="/Users/batyrchary/Desktop/traceData/taskeventsincomplete/";
+        String p1="/Users/batyrchary/Desktop/input/cloudU.csv";
+        String p2="/Users/batyrchary/Desktop/input/m.csv";
+        String p3="/Users/batyrchary/Desktop/input/tasks/";
         ReadData(p1,p2,p3);
 
 
