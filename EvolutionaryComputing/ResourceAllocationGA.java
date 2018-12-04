@@ -1,16 +1,19 @@
 
 
-import javax.crypto.Mac;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.*;
 
-public class ResourceAllocationGA {
+public class ResourceAllocationGA
+{
 
+    public static Random rand = new Random();
     public static ArrayList<Integer> probs=new ArrayList<>();
     public static ArrayList<String> servers=new ArrayList<>();
-    public static HashMap<Pair,Float> latencies=new HashMap<>();
+    //public static HashMap<Pair,Integer> latencies=new HashMap<>();
+    public static HashMap<String,Integer> latencies=new HashMap<>();
     public static ArrayList<Pair> pairs=new ArrayList<>();
     public static HashMap<Integer,ArrayList<String> > serversSeenByProb=new HashMap<>();
 
@@ -21,155 +24,43 @@ public class ResourceAllocationGA {
     public static ArrayList<Integer> probsConsidered=new ArrayList<>();
     public static ArrayList<Task> TaskEventsConsidered=new ArrayList<>();
 
+    public static ArrayList<Task> decreasingTasksSortedByCPU;
+    public static ArrayList<Task> decreasingTasksSortedByMemory;
+    public static ArrayList<Task> increasingTasksSortedByCPU;
+    public static ArrayList<Task> increasingTasksSortedByMemory;
 
+    public static ArrayList<Machine> MachinesSortedByMemoryLeft;
+    public static  ArrayList<Machine> MachinesSortedByCPULeft;
+
+    public static String XORtype;
+    public static String mutationType;
+    public static String selectionType;
+
+
+
+
+    public static float crossoverProbability;
+    public static float mutationProbability;
     public static int numberOfBitsInGene=4;
     public static int number_of_allocations=0;
     public static int numberOfHeur=4;
 
-    public static class Task
-    {
-        String time;
-        String jobID;
-        int taskIndex;
-        int eventType;
-        int priority;
-        float CPUrequest;
-        float memoryRequest;
 
-        public int probID;
-        public Task(String time, String jobID, int taskIndex, int eventType, int priority, float CPUrequest, float memoryRequest, int probID)
-        {
-            this.time=time;
-            this.jobID=jobID;
-            this.taskIndex=taskIndex;
-            this.eventType=eventType;
-            this.priority=priority;
-            this.CPUrequest=CPUrequest;
-            this.memoryRequest=memoryRequest;
-
-            this.probID=probID;
-        }
-        public  float getCPU()
-        {
-            return CPUrequest;
-        }
-        public  float getMemory()
-        {
-            return memoryRequest;
-        }
-    }
-
-    public static class Machine
-    {
-        public String time;       //mandatory
-        public String machineID;  //mandatory
-        public int eventType;  //mandatory
-        public String platformID;
-        public float CPU;
-        public float Memory;
-        public float CPUleft;
-        public float Memoryleft;
-
-        public String server;
-
-
-        public Machine(String time, String machineID, int eventType, String platformID, float CPU, float Memory, String server)
-        {
-            this.time=time;
-            this.machineID=machineID;
-            this.eventType=eventType;
-            this.platformID=platformID;
-            this.CPU=CPU;
-            this.Memory=Memory;
-            this.CPUleft=CPU;
-            this.Memoryleft=Memory;
-
-            this.server=server;
-        }
-
-        public float getCPULeft()
-        {
-            return CPUleft;
-        }
-        public float getMemoryleft()
-        {
-            return Memoryleft;
-        }
-    }
+    public static int maximumNumberOfMachines;
+    public static int maxLatencyInMap;
 
     public static class Pair
     {
         public int prob;
         public String server;
-        // public float latency;
-        public Pair(int p, String s)//, float l )
+
+        public Pair(int p, String s)
         {
             this.prob=p;
             this.server=s;
-            //this.latency=l;
         }
     }
 
-
-    public static class Gene
-    {
-        public ArrayList<Integer> gene=new ArrayList<>();
-
-        public void add(int bit)
-        {
-            gene.add(bit);
-        }
-        public int size()
-        {
-            return gene.size();
-        }
-        public int get(int i)
-        {
-            return gene.get(i);
-        }
-    }
-
-
-    public static class Chromosome
-    {
-        public ArrayList<Gene> chromosome=new ArrayList<>();
-
-        public void add(Gene g)
-        {
-            chromosome.add(g);
-        }
-        public int size()
-        {
-            return chromosome.size();
-        }
-        public Gene get(int i)
-        {
-            return chromosome.get(i);
-        }
-    }
-
-    public static class Population
-    {
-        public ArrayList<Chromosome> chromosomes=new ArrayList<>();
-        /* public Population(ArrayList<Chromosome> chromosomes)
-         {
-             this.chromosomes=chromosomes;
-         }*/
-        public void add(Chromosome c)
-        {
-            chromosomes.add(c);
-        }
-
-        public int size()
-        {
-            return this.chromosomes.size();
-        }
-
-        public Chromosome get(int i)
-        {
-            return chromosomes.get(i);
-        }
-    }
 
 
     public static Population generateRandomPopulation(int numberOfIndividuals)
@@ -191,131 +82,59 @@ public class ResourceAllocationGA {
                 }
                 c.add(g);
             }
+          //  System.out.println("individual fitness="+p);
+            c.fitness=individualFitness(c);
+           // System.out.println("fitness="+c.fitness);
             population.add(c);
         }
         return population;
     }
 
 
-
-    public static ArrayList<Machine> MachineSorter(ArrayList<Machine> machines, String type, String typeOfOrder)
+    public static int ComputeScore(ArrayList<String> assignmentPairs, int openMachineSize)
     {
-        ArrayList<Machine> ret = machines;
+        int score=0;
 
-        if (type.equals("CPULeft")) {
-            Collections.sort(ret, new Comparator<Machine>() {
-                @Override
-                public int compare(Machine p1, Machine p2) {
-                    return (int) (p1.CPUleft - p2.CPUleft); // Ascending
-                }
-            });
-            ret.sort(Comparator.comparingDouble(Machine::getCPULeft)); //smallest to largest
-        }
+        int maxLatency=maxLatencyInMap*assignmentPairs.size();
 
-        if (type.equals("MemoryLeft")) {
-            Collections.sort(ret, new Comparator<Machine>() {
-                @Override
-                public int compare(Machine p1, Machine p2) {
-                    return (int) (p1.Memoryleft - p2.Memoryleft); // Ascending
-                }
-            });
-            ret.sort(Comparator.comparingDouble(Machine::getMemoryleft)); //smallest to largest
-        }
-        return ret;
-    }
+        int overallLatency=0;
 
-
-    public static ArrayList<Task> TaskSorter(ArrayList<Task> tasks, String type, String typeOfOrder)
-    {
-        ArrayList<Task> ret=tasks;
-
-        if(type.equals("CPU"))
-        {
-            Collections.sort(ret, new Comparator<Task>() {
-                @Override public int compare(Task p1, Task p2) {
-                    return (int)(p1.CPUrequest - p2.CPUrequest); // Ascending
-                }
-            });
-            ret.sort(Comparator.comparingDouble(Task::getCPU)); //smallest to largest
-        }
-
-        if(type.equals("Memory"))
-        {
-            Collections.sort(ret, new Comparator<Task>() {
-                @Override public int compare(Task p1, Task p2) {
-                    return (int)(p1.memoryRequest - p2.memoryRequest); // Ascending
-                }
-            });
-            ret.sort(Comparator.comparingDouble(Task::getMemory)); //smallest to largest
-        }
-
-        if(typeOfOrder.equals("decreasing"))
-        {
-            Collections.reverse(ret);
-        }
-        return ret;
-    }
-
-
-    public static boolean FitsToMachine(Machine m, Task t)
-    {
-        if(m.CPUleft>t.CPUrequest && m.Memoryleft>t.memoryRequest)
-            return true;
-        return false;
-    }
-    public static Machine UpdateMachine(Machine m, Task t)
-    {
-        Machine mUpdated=m;
-
-        mUpdated.CPUleft=m.CPUleft-t.CPUrequest;
-        mUpdated.Memoryleft=m.Memoryleft-t.memoryRequest;
-
-        return mUpdated;
-    }
-
-    public static float ComputeScore(ArrayList<Pair> assignmentPairs)
-    {
-        float score=0;
-        int maximumNumberOfMachines=MachineEvents.size();
-        float maxLatencyInMap=(Collections.max(latencies.values()));
-
-        float maxLatency=maxLatencyInMap*assignmentPairs.size();
-
-        int numberOfMachines=0;
-        float overallLatency=0;
-
-        HashSet noDupSet = new HashSet();
 
 
         for(int i=0; i<assignmentPairs.size(); i++)
         {
-            noDupSet.add(assignmentPairs.get(i).server);
+
+           // System.out.println(assignmentPairs.get(i));
+
+            if(latencies.containsKey(assignmentPairs.get(i)))
+            {
+                overallLatency=overallLatency+latencies.get(assignmentPairs.get(i));
+            }
+            else
+            {
+                overallLatency=overallLatency+500;
+            }
+
         }
-        numberOfMachines=noDupSet.size();
 
-        score=2*(maxLatency-overallLatency) + (maximumNumberOfMachines-numberOfMachines);
+       // System.out.println("numberOfMachines="+openMachineSize+"\tassignmentPairs="+assignmentPairs.size()+"\tprobs.size="+probs.size()+"\toverallLatency="+overallLatency);
 
+       // score=(maximumNumberOfMachines-openMachineSize);//2*((maxLatency-overallLatency)/10)+ (maximumNumberOfMachines-numberOfMachines);
+        //score=maxLatency-overallLatency;
+        score=(maximumNumberOfMachines-openMachineSize);
         return score;
     }
 
 
-    public static float individualFitness(Chromosome individual)
+
+    public static int individualFitnessSecondApproach(Chromosome individual)
     {
-        float score=0;
+        int score=0;
         int nextFitOffset=0;
 
-        ArrayList<Task> tasksTemp=TaskEventsConsidered;
-        ArrayList<Pair> assignmentPairs=new ArrayList<>();
-
-
-        ArrayList<Task> decreasingTasksSortedByCPU=TaskSorter(tasksTemp,"CPU","decreasing");
-        ArrayList<Task> decreasingTasksSortedByMemory=TaskSorter(tasksTemp,"Memory","decreasing");
-        ArrayList<Task> increasingTasksSortedByCPU=TaskSorter(tasksTemp,"CPU","increasing");
-        ArrayList<Task> increasingTasksSortedByMemory=TaskSorter(tasksTemp,"Memory","increasing");
-
+        ArrayList<String> assignmentPairs=new ArrayList<>();
         ArrayList<Task> AllocatedTasks=new ArrayList<>();
         ArrayList<Machine> openMachines=new ArrayList<>();
-
 
 
         for(int i=0; i<number_of_allocations; i=i+numberOfBitsInGene)
@@ -326,10 +145,12 @@ public class ResourceAllocationGA {
             int HeuristicCode=gene.get(0)*10+gene.get(1);
             int parameter=gene.get(2)*10+gene.get(3);
 
-            if(HeuristicCode==0 || HeuristicCode==1 || HeuristicCode==10 || HeuristicCode==12 ) //FirstFit, BestFit, NextFit,
+            int how_many_times_to_apply=(int)(gene.get(4)*(Math.pow(2,3) +gene.get(5)*Math.pow(2,2)+gene.get(6)*Math.pow(2,1)+gene.get(7)*Math.pow(2,0)));
+
+            if(HeuristicCode==0 || HeuristicCode==1 || HeuristicCode==10 || HeuristicCode==11 ) //FirstFit, BestFit, NextFit,
             {
                 Task taskToBeAssigned=null;
-                if(parameter==0) //decreasingTasksSortedByCPU
+                if(parameter==0 ) //decreasingTasksSortedByCPU
                 {
                     for(int t=0; t<decreasingTasksSortedByCPU.size(); t++)
                     {
@@ -376,12 +197,13 @@ public class ResourceAllocationGA {
                 /////////////////////apply heuristics
                 Machine machineToAllocate=null;
 
-                if(HeuristicCode==0 || HeuristicCode==11)                //FirstFit
+
+                if(HeuristicCode==0 ||HeuristicCode==11 )                //FirstFit
                 {
                     boolean NotFoundInOpen=true;
                     for(int m=0; m<openMachines.size(); m++)
                     {
-                        if(FitsToMachine(openMachines.get(m),taskToBeAssigned))
+                        if(Machine.FitsToMachine(openMachines.get(m),taskToBeAssigned))
                         {
                             machineToAllocate=openMachines.get(m);
                             NotFoundInOpen=false;
@@ -392,8 +214,8 @@ public class ResourceAllocationGA {
                     {
                         for (int m = 0; m < MachineEvents.size(); m++)
                         {
-                            Machine machine = MachineEvents.get(m);
-                            if (!openMachines.contains(machine) && FitsToMachine(machine, taskToBeAssigned)) {
+                            Machine machine = new Machine(MachineEvents.get(m));
+                            if (Machine.FitsToMachine(machine, taskToBeAssigned)) {
                                 machineToAllocate = machine;
                                 break;
                             }
@@ -402,13 +224,13 @@ public class ResourceAllocationGA {
                 }
                 else if(HeuristicCode==1)           //BestFit
                 {
-                    ArrayList<Machine> openMachinesSortedByMemoryLeft=MachineSorter(openMachines,"MemoryLeft","NA");
-                   // ArrayList<Machine> openMachinesSortedByCPULeft=MachineSorter(openMachines,"CPULeft","NA");
+                    ArrayList<Machine> openMachinesSortedByMemoryLeft=Machine.MachineSorter(openMachines,"MemoryLeft","NA");
+                    // ArrayList<Machine> openMachinesSortedByCPULeft=MachineSorter(openMachines,"CPULeft","NA");
 
                     boolean NotFoundInOpen=true;
                     for(int m=0; m<openMachinesSortedByMemoryLeft.size(); m++)
                     {
-                        if(FitsToMachine(openMachinesSortedByMemoryLeft.get(m),taskToBeAssigned))
+                        if(Machine.FitsToMachine(openMachinesSortedByMemoryLeft.get(m),taskToBeAssigned))
                         {
                             machineToAllocate=openMachinesSortedByMemoryLeft.get(m);
                             NotFoundInOpen=false;
@@ -417,13 +239,10 @@ public class ResourceAllocationGA {
                     }
                     if(NotFoundInOpen)
                     {
-                        ArrayList<Machine> MachinesSortedByMemoryLeft=MachineSorter(MachineEvents,"MemoryLeft","NA");
-                       // ArrayList<Machine> MachinesSortedByCPULeft=MachineSorter(MachineEvents,"CPULeft","NA");
-
                         for (int m = 0; m < MachinesSortedByMemoryLeft.size(); m++)
                         {
-                            Machine machine = MachinesSortedByMemoryLeft.get(m);
-                            if (!openMachines.contains(machine) && FitsToMachine(machine, taskToBeAssigned)) {
+                            Machine machine = new Machine(MachinesSortedByMemoryLeft.get(m));
+                            if (Machine.FitsToMachine(machine, taskToBeAssigned)) {
                                 machineToAllocate = machine;
                                 break;
                             }
@@ -435,7 +254,7 @@ public class ResourceAllocationGA {
                     boolean NotFoundInOpen=true;
                     for(;nextFitOffset<openMachines.size();nextFitOffset++)
                     {
-                        if(FitsToMachine(openMachines.get(nextFitOffset),taskToBeAssigned))
+                        if(Machine.FitsToMachine(openMachines.get(nextFitOffset),taskToBeAssigned))
                         {
                             machineToAllocate=openMachines.get(nextFitOffset);
                             NotFoundInOpen=false;
@@ -447,16 +266,16 @@ public class ResourceAllocationGA {
                     {
                         for (int m = 0; m < MachineEvents.size(); m++)
                         {
-                            Machine machine = MachineEvents.get(m);
-                            if (!openMachines.contains(machine) && FitsToMachine(machine, taskToBeAssigned)) {
+                            Machine machine = new Machine( MachineEvents.get(m));
+                            if (Machine.FitsToMachine(machine, taskToBeAssigned)) {
                                 machineToAllocate = machine;
                                 break;
                             }
                         }
                     }
                 }
-             //   else if(HeuristicCode==11)
-               // {
+                //   else if(HeuristicCode==11)
+                // {
 
 //                }
 
@@ -468,32 +287,401 @@ public class ResourceAllocationGA {
                 }
 
                 int indexInOpen=openMachines.indexOf(machineToAllocate);
-                int indexInMachineEvent=MachineEvents.indexOf(machineToAllocate);
 
-                openMachines.set(indexInOpen,UpdateMachine(machineToAllocate,taskToBeAssigned));
-                MachineEvents.set(indexInMachineEvent,UpdateMachine(machineToAllocate,taskToBeAssigned));
+
+
+                if(machineToAllocate==null)
+                    System.out.println("problem");
+                openMachines.set(indexInOpen,Machine.UpdateMachine(machineToAllocate,taskToBeAssigned));
 
 
                 int probID=taskToBeAssigned.probID;
                 String serverId=machineToAllocate.server;
-                assignmentPairs.add(new Pair(probID,serverId));
+
+                String p="prb="+String.valueOf(probID)+",server="+serverId;
+                assignmentPairs.add(p);
+               // assignmentPairs.add(new Pair(probID,serverId));
             }
         }
-        score=ComputeScore(assignmentPairs);
+        score=ComputeScore(assignmentPairs,openMachines.size());
+        return score;
+    }
+
+
+    public static boolean ContainsTask(ArrayList<Task> tasks, Task task)
+    {
+        boolean contains=false;
+
+        for(int i=0; i<tasks.size();i++)
+        {
+            if(tasks.get(i).taskID==task.taskID)
+            {
+                contains=true;
+                break;
+            }
+        }
+
+    return contains;
+    }
+
+    public static int individualFitness(Chromosome individual)
+    {
+        int score=0;
+        int nextFitOffset=0;
+
+    //    ArrayList<Machine> MachineEventsForFitness=new ArrayList<>();
+    //    for(int i=0; i<MachineEvents.size();i++)
+    //    {
+     //       Machine m=MachineEvents.get(i);
+     //       MachineEventsForFitness.add(new Machine(m));
+     //   }
+
+        ArrayList<String> assignmentPairs=new ArrayList<>();
+        ArrayList<Task> AllocatedTasks=new ArrayList<>();
+        ArrayList<Machine> openMachines=new ArrayList<>();
+
+        for(int i=0; i<number_of_allocations; i=i+1)
+        {
+            Gene gene=individual.get(i);
+
+            //00->0   01->1   10->10  11->11      000->0, 001->1, 010->10,    011->11, 100->100,
+            int HeuristicCode=gene.get(0)*10+gene.get(1);
+            int parameter=gene.get(2)*10+gene.get(3);
+
+            if(HeuristicCode==0 || HeuristicCode==1 || HeuristicCode==10 || HeuristicCode==11 ) //FirstFit, BestFit, NextFit,
+            {
+                Task taskToBeAssigned=null;
+                if(parameter==0 ) //decreasingTasksSortedByCPU
+                {
+                    for(int t=0; t<decreasingTasksSortedByCPU.size(); t++)
+                    {
+                        //if(!(AllocatedTasks.contains(decreasingTasksSortedByCPU.get(t))))
+                        if(!ContainsTask(AllocatedTasks,decreasingTasksSortedByCPU.get(t)))
+                        {
+                            taskToBeAssigned=decreasingTasksSortedByCPU.get(t);
+                            break;
+                        }
+                    }
+                }
+                else if(parameter==1)//decreasingTasksSortedByMemory
+                {
+                    for(int t=0; t<decreasingTasksSortedByMemory.size(); t++)
+                    {
+                        //if(!(AllocatedTasks.contains(decreasingTasksSortedByMemory.get(t))))
+                        if(!ContainsTask(AllocatedTasks,decreasingTasksSortedByMemory.get(t)))
+                        {
+                            taskToBeAssigned=decreasingTasksSortedByMemory.get(t);
+                            break;
+                        }
+                    }
+                }
+                else if(parameter==10) //increasingTasksSortedByCPU
+                {
+                    for(int t=0; t<increasingTasksSortedByCPU.size(); t++)
+                    {
+                        //if(!(AllocatedTasks.contains(increasingTasksSortedByCPU.get(t))))
+                        if(!ContainsTask(AllocatedTasks,increasingTasksSortedByCPU.get(t)))
+                        {
+                            taskToBeAssigned=increasingTasksSortedByCPU.get(t);
+                            break;
+                        }
+                    }
+                }
+                else if(parameter==11) //increasingTasksSortedByMemory
+                {
+                    for(int t=0; t<increasingTasksSortedByMemory.size(); t++)
+                    {
+                        //if(!(AllocatedTasks.contains(increasingTasksSortedByMemory.get(t))))
+                        if(!ContainsTask(AllocatedTasks,increasingTasksSortedByMemory.get(t)))
+                        {
+                            taskToBeAssigned=increasingTasksSortedByMemory.get(t);
+                            break;
+                        }
+                    }
+                }
+
+                /////////////////////apply heuristics
+                Machine machineToAllocate=null;
+
+
+                if(HeuristicCode==0 ||HeuristicCode==11 )// ||HeuristicCode==1 ||HeuristicCode==10 )                //FirstFit
+                {
+                    boolean NotFoundInOpen=true;
+                    for(int m=0; m<openMachines.size(); m++)
+                    {
+                        if(Machine.FitsToMachine(openMachines.get(m),taskToBeAssigned))
+                        {
+                            machineToAllocate=openMachines.get(m);
+                            NotFoundInOpen=false;
+                            break;
+                        }
+                    }
+                    if(NotFoundInOpen)
+                    {
+                        for (int m = 0; m < MachineEvents.size(); m++)
+                        {
+                            Machine machine = new Machine(MachineEvents.get(m));
+                            if (Machine.FitsToMachine(machine, taskToBeAssigned)) {
+                                machineToAllocate = machine;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if(HeuristicCode==1)           //BestFit
+                {
+                    ArrayList<Machine> openMachinesSortedByMemoryLeft=Machine.MachineSorter(openMachines,"CPULeft","NA");
+                   // ArrayList<Machine> openMachinesSortedByCPULeft=MachineSorter(openMachines,"CPULeft","NA");
+
+                    boolean NotFoundInOpen=true;
+                    for(int m=0; m<openMachinesSortedByMemoryLeft.size(); m++)
+                    {
+                        if(Machine.FitsToMachine(openMachinesSortedByMemoryLeft.get(m),taskToBeAssigned))
+                        {
+                            machineToAllocate=openMachinesSortedByMemoryLeft.get(m);
+                            NotFoundInOpen=false;
+                            break;
+                        }
+                    }
+                    if(NotFoundInOpen)
+                    {
+                        for (int m = 0; m < MachinesSortedByCPULeft.size(); m++)
+                        {
+                            Machine machine = new Machine(MachinesSortedByCPULeft.get(m));
+                            if (Machine.FitsToMachine(machine, taskToBeAssigned)) {
+                                machineToAllocate = machine;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if(HeuristicCode==10)          //NextFit
+                {
+                    boolean NotFoundInOpen=true;
+                    for(;nextFitOffset<openMachines.size();nextFitOffset++)
+                    {
+                        if(Machine.FitsToMachine(openMachines.get(nextFitOffset),taskToBeAssigned))
+                        {
+                            machineToAllocate=openMachines.get(nextFitOffset);
+                            NotFoundInOpen=false;
+                            break;
+                        }
+                    }   //dont have to increment nextFitOffset
+
+                    if(NotFoundInOpen)
+                    {
+                        for (int m = 0; m < MachineEvents.size(); m++)
+                        {
+                            Machine machine = new Machine( MachineEvents.get(m));
+                            if (Machine.FitsToMachine(machine, taskToBeAssigned)) {
+                                machineToAllocate = machine;
+                                break;
+                            }
+                        }
+                    }
+                }
+             //   else if(HeuristicCode==11)
+               // {
+
+//                }
+
+
+                AllocatedTasks.add(taskToBeAssigned);
+
+                if(machineToAllocate==null) {
+                    System.out.println("problem");
+
+                }
+
+                if(!openMachines.contains(machineToAllocate))
+                {
+                    openMachines.add(machineToAllocate);
+                }
+
+                int indexInOpen=openMachines.indexOf(machineToAllocate);
+
+                openMachines.set(indexInOpen,Machine.UpdateMachine(machineToAllocate,taskToBeAssigned));
+
+                int probID=taskToBeAssigned.probID;
+                String serverId=machineToAllocate.server;
+
+                String p="prb="+String.valueOf(probID)+",server="+serverId;
+                assignmentPairs.add(p);
+               // assignmentPairs.add(new Pair(probID,serverId));
+            }
+        }
+        //System.out.println("Allocated="+AllocatedTasks.size());
+       // System.out.println("OpenMach="+openMachines.size());
+        score=ComputeScore(assignmentPairs, openMachines.size());
         return score;
     }
 
     public static float averageFitness(Population population)
     {
-        float fitness=0;
+        int fitness=0;
         for(int i=0; i<population.size();i++)
         {
-            fitness=fitness+individualFitness(population.get(i));
+            fitness=fitness+population.get(i).fitness;
         }
         return fitness/population.size();
     }
 
 
+    public static ArrayList<Chromosome> Crossover(Chromosome p1,Chromosome p2, String type)
+    {
+        ArrayList<Chromosome> ret=new ArrayList<>();
+        Chromosome r1=new Chromosome(p1);
+        Chromosome r2=new Chromosome(p2);
+
+        int number_of_genes=p1.size();
+        int number_of_bits_in_genes=p1.chromosome.get(0).size();
+        int total_bits_in_chromosome=number_of_genes*number_of_bits_in_genes;
+
+        int randomInt1=rand.nextInt(((total_bits_in_chromosome-1) - 0) + 1) + 0;
+        int randomInt2=rand.nextInt(((total_bits_in_chromosome-1) - 0) + 1) + 0;
+
+        if(randomInt1==randomInt2)
+        {
+            randomInt2=(randomInt1+10)%p1.size();
+        }
+        int max=randomInt1;
+        int min=randomInt2;
+        if(randomInt1<randomInt2)
+        {
+            max=randomInt2;
+            min=randomInt1;
+        }
+
+        if(type.equals("SinglePoint"))
+        {
+            int index=0;
+            for(int g=0;g<number_of_genes;g++)
+            {
+                for(int b=0;b<number_of_bits_in_genes;b++)
+                {
+                    if(index>=randomInt1)
+                    {
+                        int temp1=r1.chromosome.get(g).gene.get(b);
+                        int temp2=r2.chromosome.get(g).gene.get(b);
+
+                        r1.chromosome.get(g).gene.set(b,temp2);
+                        r2.chromosome.get(g).gene.set(b,temp1);
+                    }
+                    index++;
+                }
+            }
+        }
+        else if(type.equals("TwoPoint"))
+        {
+            int index=0;
+            for(int g=0;g<number_of_genes;g++)
+            {
+                for(int b=0;b<number_of_bits_in_genes;b++)
+                {
+                    if(index>=min && index<=max)
+                    {
+                        int temp1=r1.chromosome.get(g).gene.get(b);
+                        int temp2=r2.chromosome.get(g).gene.get(b);
+
+                        r1.chromosome.get(g).gene.set(b,temp2);
+                        r2.chromosome.get(g).gene.set(b,temp1);
+                    }
+                    index++;
+                }
+            }
+        }
+        ret.add(r1);
+        ret.add(r2);
+
+        return ret;
+    }
+
+    public static Chromosome Mutation(Chromosome individual, String type)
+    {
+
+        Chromosome r1=new Chromosome(individual);
+
+        int number_of_genes=r1.size();
+        int number_of_bits_in_genes=r1.chromosome.get(0).size();
+        int total_bits_in_chromosome=number_of_genes*number_of_bits_in_genes;
+
+        int randomInt1=rand.nextInt(((total_bits_in_chromosome-1) - 0) + 1) + 0;
+
+        if(type.equals("SingleBitFlip"))
+        {
+            int index=0;
+            for(int g=0;g<number_of_genes;g++)
+            {
+                for (int b = 0; b < number_of_bits_in_genes; b++)
+                {
+                    if(randomInt1==index)
+                    {
+                        int temp1=r1.chromosome.get(g).gene.get(b);
+                        r1.chromosome.get(g).gene.set(b,(temp1+1)%2); //flipping
+                        return r1;
+                    }
+                    index++;
+                }
+            }
+            System.out.println("problem in mutation1");
+            return r1;
+        }
+        else {
+            System.out.println("problem in mutation2");
+            return individual;
+        }
+    }
+
+
+    public static Population GenerateNewGeneration(Population generation)
+    {
+        Population newGeneration=new Population();
+
+        for(int i=0; i<generation.size()/2; i++)
+        {
+            Chromosome parent1=IndividualSelection.RouletteWheel(generation);
+            Chromosome parent2=IndividualSelection.RouletteWheel(generation);
+
+            Chromosome kid1=new Chromosome(parent1);
+            Chromosome kid2=new Chromosome(parent2);
+            if(rand.nextFloat()<crossoverProbability)
+            {
+                ArrayList<Chromosome> kids = Crossover(parent1,parent2,XORtype);
+                kid1 = kids.get(0);
+                kid2 = kids.get(1);
+            }
+            if(rand.nextFloat()<mutationProbability)
+            {
+                kid1=Mutation(kid1,mutationType);
+            }
+            if(rand.nextFloat()<mutationProbability)
+            {
+                kid2=Mutation(kid2,mutationType);
+            }
+
+            kid1.fitness=individualFitness(kid1);
+            kid2.fitness=individualFitness(kid2);
+
+            newGeneration.add(kid1);
+            newGeneration.add(kid2);
+        }
+        return newGeneration;
+    }
+
+    public static Population Selection(Population prevGeneration, Population newGeneration)
+    {
+        Population ret=prevGeneration.addTwoPopulation(prevGeneration,newGeneration);
+
+        ret=ret.sortByFitness(ret);
+
+        Population retf=new Population();
+
+        for(int i=0; i<prevGeneration.size(); i++)
+        {
+            retf.add(ret.get(i));
+        }
+        return retf;
+    }
 
     public static void GA(int population, int consecutiveGenerations, float minDifferenceInFitness)
     {
@@ -503,52 +691,96 @@ public class ResourceAllocationGA {
 
 
         Population initialPop=generateRandomPopulation(population);
-        System.out.println("generated random");
 
-        System.out.println(averageFitness(initialPop));
+        Population prevGeneration=initialPop;
+        Population newGeneration=initialPop;
 
-  /*      while(consGeneration<consecutiveGenerations)
+
+        prevAvgFit=averageFitness(prevGeneration);
+
+        newAvgFit=averageFitness(newGeneration);
+
+        while(consGeneration<consecutiveGenerations)
         {
+            //System.out.println("Fitness="+prevAvgFit+"\tbestIndividual="+prevGeneration.get(0).fitness);
+            System.out.println(prevAvgFit+","+prevGeneration.get(0).fitness);
+
 
             prevAvgFit=newAvgFit;
-            newAvgFit=averageFitness(population);
 
+            newGeneration=GenerateNewGeneration(prevGeneration);
 
+            newAvgFit=averageFitness(newGeneration);
+
+            prevGeneration=Selection(prevGeneration,newGeneration);
 
             if(Math.abs(prevAvgFit-newAvgFit)<minDifferenceInFitness)
                 consGeneration++;
             else
                 consGeneration=0;
-        }*/
+        }
     }
 
 
     public static void main(String[] args)
     {
+        crossoverProbability=0.9f;
+        mutationProbability=0.1f;
+
+        //selectionType="FitnessProportionalSelection";// StochasticUniversalSampling
+        mutationType="SingleBitFlip";
+        XORtype="TwoPoint";  //TwoPoint,SinglePoint
+        ////////////////////////////////////////
+
+       // String p1=args[0]+"cloudU.csv";//"/Users/batyrchary/Desktop/projects/Sushil/cloudU.csv";
+        //String p2=args[0]+"part-00000-of-00001.csv";//"/Users/batyrchary/Desktop/traceData/machineevents/part-00000-of-00001.csv";
+        //String p3=args[1];//"/Users/batyrchary/Desktop/traceData/taskeventsincomplete/";
+
         String p1="/Users/batyrchary/Desktop/projects/Sushil/cloudU.csv";
         String p2="/Users/batyrchary/Desktop/traceData/machineevents/part-00000-of-00001.csv";
         String p3="/Users/batyrchary/Desktop/traceData/taskeventsincomplete/";
         ReadData(p1,p2,p3);
 
-        System.out.println("tasks="+TaskEvents.size());
-        System.out.println("probs="+probs.size());
-        System.out.println("tasks/probs="+TaskEvents.size()/probs.size());
+
+
+        maximumNumberOfMachines=MachineEvents.size();
+        System.out.println("maximumNumberOfMachines="+maximumNumberOfMachines);
+        maxLatencyInMap=(Collections.max(latencies.values()));
+
+
 
         //number_of_allocations=probs.size();
-        number_of_allocations=10;//100;
+        number_of_allocations=1000;
+       // number_of_allocations=TaskEvents.size();
+
+        System.out.println("maxlatency="+maxLatencyInMap*1000);
+
+
+        numberOfBitsInGene=4;
 
         for(int i=0; i<number_of_allocations; i++)
         {
-            probsConsidered.add(probs.get(i));
+           // probsConsidered.add(probs.get(i));
             TaskEventsConsidered.add(TaskEvents.get(i));
         }
 
-          GA(50,5,0.5f); //population,consequtive generations fitness is not changing, difference in fitness
+        decreasingTasksSortedByCPU=Task.TaskSorter(TaskEvents,"CPU","decreasing");
+        decreasingTasksSortedByMemory=Task.TaskSorter(TaskEvents,"Memory","decreasing");
+        increasingTasksSortedByCPU=Task.TaskSorter(TaskEvents,"CPU","increasing");
+        increasingTasksSortedByMemory=Task.TaskSorter(TaskEvents,"Memory","increasing");
+
+
+       // MachinesSortedByMemoryLeft=Machine.MachineSorter(MachineEvents,"MemoryLeft","NA");
+        MachinesSortedByCPULeft=Machine.MachineSorter(MachineEvents,"CPULeft","NA");
+
+
+
+
+        GA(50,10,0.5f); //population,consequtive generations fitness is not changing, difference in fitness
     }
 
     public static void ReadData(String ServerUserLatencyMapping, String machineEvents, String taskEvents)
     {
-
         ////
         try {
             File file = new File(ServerUserLatencyMapping);
@@ -569,7 +801,14 @@ public class ResourceAllocationGA {
                     serversForPrb.add(server);
                     Pair pair = new Pair(prb, server);
                     pairs.add(pair);
-                    latencies.put(pair, latency);
+
+                    int intlatency=Math.round(latency);
+
+                    String p="prb="+String.valueOf(prb)+",server="+server;
+                    latencies.put(p,intlatency);
+                    //latencies.put(pair, intlatency);
+
+
                     if (!servers.contains(server))
                         servers.add(server);
                 }
@@ -584,6 +823,7 @@ public class ResourceAllocationGA {
         {
             File file = new File(taskEvents);
 
+            long taskID=0;
             for(File f: file.listFiles())
             {
                 BufferedReader br = new BufferedReader(new FileReader(f));
@@ -607,13 +847,19 @@ public class ResourceAllocationGA {
                         int priority = Integer.parseInt(splitted[8]);     //mandatory
                         float CPUrequest = Float.parseFloat(splitted[9]);
                         float memoryRequest = Float.parseFloat(splitted[10]);
+
+                      /*  if(CPUrequest*10<1 && memoryRequest*10<1) {
+                            CPUrequest = CPUrequest * 10;
+                            memoryRequest = memoryRequest * 10;
+                        }*/
                         //    float diskSpaceRequest = Float.parseFloat(splitted[11]);
                         //    boolean differentMachineRestriction = Boolean.getBoolean(splitted[12]);
 
                         int probId=probs.get(counter%probs.size());
                         counter++;
 
-                        TaskEvents.add(new Task(time,jobID,taskIndex,eventType,priority,CPUrequest,memoryRequest,probId));
+                        TaskEvents.add(new Task(taskID,time,jobID,taskIndex,eventType,priority,CPUrequest,memoryRequest,probId));
+                        taskID++;
                         //System.out.println(line);
                     }
                 }
@@ -631,7 +877,9 @@ public class ResourceAllocationGA {
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
 
+
             int counter=0;
+            long MyMachineId=0;
             while ((line = br.readLine()) != null) {
 
                 String splitted []=line.split(",");
@@ -655,14 +903,11 @@ public class ResourceAllocationGA {
                     String server=servers.get(counter%servers.size());
                     counter++;
 
-                    MachineEvents.add(new Machine(time,machineID,eventType,platformID,CPU,Memory,server));
+                    MachineEvents.add(new Machine(MyMachineId,time,machineID,eventType,platformID,CPU,Memory,server));
+                    MyMachineId++;
                 }
             }
             br.close();
         }catch (Exception e){ System.out.println("exception in reading"); }
-
-
-
-
     }
 }
