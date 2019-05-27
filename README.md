@@ -20,8 +20,8 @@
 
 ```
 
-javac *.java
+$ javac *.java
 
-java DreamRunner
+$ java DreamRunner
 
 ```
