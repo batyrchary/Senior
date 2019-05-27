@@ -8,15 +8,15 @@
 
 
 
-##Design
+## Design
 
-**UML** folder contains Design of the project as **StarUML** file.
+> **UML** folder contains Design of the project as **StarUML** file.
 
 <img src="./fig/design.png" title="FVCproductions" alt="FVCproductions">
 
 
 
-##How to run
+## How to run
 
 ```
 
