@@ -1,9 +1,0 @@
-Usage:
-	To compile:
-	javac machine2.java
-
-	To Run:
-	java machine2 <Data> <step> <stoppingCondition>
-		example:
-		java machine2 ./Data/Data-Grades.csv 0.00001 0.000001
-

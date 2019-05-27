@@ -1,4 +1,0 @@
-This is implementation of raytracer. With help of makefile you can create executable named raytracer. 
-Also in inputs.tar.gz there provided simple inputs and expected outputs. Time to generate output will 
-depend on how many triangles are there in input.
-With command like this "./raytracer ./inputs/scenes/att_test_scene.txt ./inputs/cameras/att_test_camera.txt" you can generate outputs

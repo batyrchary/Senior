@@ -1,7 +1,0 @@
-export PATH=${JAVA_HOME}/bin:${PATH}
-export HADOOP_CLASSPATH=${JAVA_HOME}/lib/tools.jar
-
-./hadoop/bin/hadoop com.sun.tools.javac.Main  *.java 
-jar cf hw3.jar *.class
-./hadoop/bin/hadoop jar hw3.jar Assignment3 count ./input out
-
